@@ -1,8 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.TopCourse;
-import com.tutr.backend.dto.TutorRatingSummary;
-import com.tutr.backend.dto.FilterOptions;
+import com.tutr.backend.dto.*;
 import com.tutr.backend.model.CourseCategory;
 import com.tutr.backend.model.TeachingMode;
 import com.tutr.backend.service.RatingService;
@@ -50,6 +48,16 @@ public class TutorRatingController {
         try {
             List<TopCourse> topCourses = ratingService.getTopRatedCourses(tutorId, limit);
             return ResponseEntity.ok(topCourses);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/review/{reviewId}")
+    public ResponseEntity<?> getTutorReviewDetail(@PathVariable Long reviewId) {
+        try {
+            TutorReviewDetail reviewDetail = ratingService.getTutorReviewDetail(reviewId);
+            return ResponseEntity.ok(reviewDetail);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }

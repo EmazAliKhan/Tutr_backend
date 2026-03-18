@@ -16,8 +16,8 @@ public class CourseRequest {
     private String location;
     private DaysOfWeek fromDay;      // e.g., MONDAY
     private DaysOfWeek toDay;        // e.g., FRIDAY
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private String startTime;
+    private String endTime;
     private Integer classesPerMonth;
     private Double price;
 }

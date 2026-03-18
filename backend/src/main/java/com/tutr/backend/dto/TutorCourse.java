@@ -19,8 +19,8 @@ public class TutorCourse {
     private CourseCategory category;
     private TeachingMode teachingMode;
     private String location;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private String startTime;
+    private String endTime;
     private DaysOfWeek fromDay;
     private DaysOfWeek toDay;
     private List<String> daysRange;

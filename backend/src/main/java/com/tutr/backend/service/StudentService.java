@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.dto.StudentFilter;
 import com.tutr.backend.dto.StudentList;
 import com.tutr.backend.dto.StudentDetail;
 import com.tutr.backend.model.*;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -120,4 +122,34 @@ public class StudentService {
                 .build();
     }
 
+    public List<StudentFilter> getFilteredStudents(Long tutorId, CourseCategory category, TeachingMode teachingMode) {
+        // Get all confirmed connections for this tutor
+        List<TutorStudentConnection> connections = connectionRepository
+                .findByTutorIdAndStatus(tutorId, ConnectionStatus.CONFIRMED);
+
+        // Filter connections based on course category and teaching mode
+        Stream<TutorStudentConnection> filteredStream = connections.stream();
+
+        if (category != null) {
+            filteredStream = filteredStream.filter(conn ->
+                    conn.getCourse().getCategory() == category);
+        }
+
+        if (teachingMode != null) {
+            filteredStream = filteredStream.filter(conn ->
+                    conn.getCourse().getTeachingMode() == teachingMode);
+        }
+
+        // Convert to DTO with only name and image
+        return filteredStream
+                .map(conn -> {
+                    StudentProfile student = conn.getStudent();
+                    return StudentFilter.builder()
+                            .studentId(student.getId())
+                            .studentName(student.getFirstName() + " " + student.getLastName())
+                            .studentImage(student.getProfilePictureUrl())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
 }

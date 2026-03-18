@@ -14,6 +14,10 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
     boolean existsByConnectionId(Long connectionId);
     Optional<RatingReview> findByConnectionId(Long connectionId);
     List<RatingReview> findByTutorId(Long tutorId);
+    List<RatingReview> findByCourseId(Long courseId);
+
+    // ============ ADD THIS MISSING METHOD ============
+    boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
 
     @Query("SELECT r FROM RatingReview r WHERE r.tutor.id = :tutorId AND r.course.category = :category")
     List<RatingReview> findByTutorIdAndCategory(@Param("tutorId") Long tutorId, @Param("category") CourseCategory category);
@@ -48,7 +52,10 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
     @Query("SELECT AVG(r.rating) FROM RatingReview r WHERE r.course.id = :courseId")
     Double getAverageRatingForCourse(@Param("courseId") Long courseId);
 
-    // ============ CORRECTED TOP TUTORS QUERY ============
+    @Query("SELECT COUNT(r) FROM RatingReview r WHERE r.course.id = :courseId")
+    Integer getRatingCountForCourse(@Param("courseId") Long courseId);
+
+    // ============ TOP TUTORS QUERY ============
     @Query(value = "SELECT tutor_id, COALESCE(AVG(rating), 0) as avgRating, COUNT(*) as ratingCount " +
             "FROM ratings_reviews " +
             "GROUP BY tutor_id " +
@@ -56,7 +63,7 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
             "LIMIT :limit", nativeQuery = true)
     List<Object[]> getTopTutorsWithLimit(@Param("limit") int limit);
 
-    // ============ CORRECTED TOP COURSES QUERY ============
+    // ============ TOP COURSES QUERY ============
     @Query(value = "SELECT course_id, COALESCE(AVG(rating), 0) as avgRating " +
             "FROM ratings_reviews " +
             "WHERE tutor_id = :tutorId " +
@@ -64,8 +71,4 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
             "ORDER BY avgRating DESC " +
             "LIMIT :limit", nativeQuery = true)
     List<Object[]> getTopRatedCoursesForTutor(@Param("tutorId") Long tutorId, @Param("limit") int limit);
-
-    // ADD THIS METHOD
-    @Query("SELECT COUNT(r) FROM RatingReview r WHERE r.course.id = :courseId")
-    Integer getRatingCountForCourse(@Param("courseId") Long courseId);
 }

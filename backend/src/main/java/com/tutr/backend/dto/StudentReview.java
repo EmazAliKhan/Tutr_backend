@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class StudentReview {
     private Long reviewId;
     private String studentName;
+    private String tutorName;
     private String studentImage;
     private Integer rating;
     private String review;

@@ -1,7 +1,10 @@
 package com.tutr.backend.controller;
 
+import com.tutr.backend.dto.StudentFilter;
 import com.tutr.backend.dto.StudentList;
 import com.tutr.backend.dto.StudentDetail;
+import com.tutr.backend.model.CourseCategory;
+import com.tutr.backend.model.TeachingMode;
 import com.tutr.backend.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -51,6 +54,20 @@ public class StudentController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error searching students: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/tutor/{tutorId}/students/filter")
+    public ResponseEntity<?> filterStudents(
+            @PathVariable Long tutorId,
+            @RequestParam(required = false) CourseCategory category,
+            @RequestParam(required = false) TeachingMode teachingMode) {
+        try {
+            List<StudentFilter> students = studentService.getFilteredStudents(tutorId, category, teachingMode);
+            return ResponseEntity.ok(students);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error filtering students: " + e.getMessage());
         }
     }
 }

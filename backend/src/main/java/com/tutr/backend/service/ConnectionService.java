@@ -2,12 +2,17 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.dto.ConnectionRequest;
 import com.tutr.backend.dto.ConnectionResponse;
+import com.tutr.backend.dto.StudentBid;
+import com.tutr.backend.dto.TutorBid;
 import com.tutr.backend.model.*;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +24,7 @@ public class ConnectionService {
     private final CourseRepository courseRepository;
     private final StudentProfileRepository studentRepository;
     private final TutorProfileRepository tutorRepository;
+    private final RatingReviewRepository ratingRepository;
 
     @Transactional
     public TutorStudentConnection requestConnection(ConnectionRequest request) {
@@ -171,10 +177,104 @@ public class ConnectionService {
                 .collect(Collectors.toList());
     }
 
+    public List<ConnectionResponse> getTutorConfirmedConnections(Long tutorId) {
+        return connectionRepository.findByTutorIdAndStatus(tutorId, ConnectionStatus.CONFIRMED)
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ConnectionResponse> getStudentConfirmedConnections(Long studentId) {
+        return connectionRepository.findByStudentIdAndStatus(studentId, ConnectionStatus.CONFIRMED)
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<ConnectionResponse> getNegotiationsForTutor(Long tutorId) {
         return connectionRepository.findByTutorIdAndStatus(tutorId, ConnectionStatus.NEGOTIATING)
                 .stream()
                 .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<TutorBid> getTutorBidsWithCourseCard(Long tutorId) {
+        // Get all negotiating connections (bids)
+        List<TutorStudentConnection> bids = connectionRepository
+                .findByTutorIdAndStatus(tutorId, ConnectionStatus.NEGOTIATING);
+
+        return bids.stream()
+                .map(conn -> {
+                    StudentProfile student = conn.getStudent();
+                    Course course = conn.getCourse();
+
+                    // Get average rating for this course
+                    Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+                    return TutorBid.builder()
+                            .connectionId(conn.getId())
+                            .requestedAt(conn.getRequestedAt())
+
+                            // Student Info
+                            .studentId(student.getId())
+                            .studentName(student.getFirstName() + " " + student.getLastName())
+                            .studentImage(student.getProfilePictureUrl())
+
+                            // Course Card Info
+                            .courseId(course.getId())
+                            .subject(course.getSubject())
+                            .category(course.getCategory())
+                            .teachingMode(course.getTeachingMode())
+                            .price(course.getPrice())
+                            .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+
+                            // Pricing Details
+                            .originalPrice(conn.getOriginalPrice())
+                            .studentBidPrice(conn.getStudentCounterOffer())
+                            .tutorOffer(conn.getTutorCounterOffer())
+                            .status(conn.getStatus().toString())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<TutorBid> getTutorCourseBids(Long tutorId, Long courseId) {
+        // Get all negotiating connections (bids) for this tutor and specific course
+        List<TutorStudentConnection> bids = connectionRepository
+                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.NEGOTIATING);
+
+        return bids.stream()
+                .map(conn -> {
+                    StudentProfile student = conn.getStudent();
+                    Course course = conn.getCourse();
+
+                    // Get average rating for this course
+                    Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+                    return TutorBid.builder()
+                            .connectionId(conn.getId())
+                            .requestedAt(conn.getRequestedAt())
+
+                            // Student Info
+                            .studentId(student.getId())
+                            .studentName(student.getFirstName() + " " + student.getLastName())
+                            .studentImage(student.getProfilePictureUrl())
+
+                            // Course Card Info
+                            .courseId(course.getId())
+                            .subject(course.getSubject())
+                            .category(course.getCategory())
+                            .teachingMode(course.getTeachingMode())
+                            .price(course.getPrice())
+                            .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+
+                            // Pricing Details
+                            .originalPrice(conn.getOriginalPrice())
+                            .studentBidPrice(conn.getStudentCounterOffer())
+                            .tutorOffer(conn.getTutorCounterOffer())
+                            .status(conn.getStatus().toString())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -204,4 +304,154 @@ public class ConnectionService {
                                 conn.getRequestedAt())
                 .build();
     }
+
+    public List<StudentBid> getStudentBidsWithDetails(Long studentId) {
+        // Get all negotiating connections (bids) for this student
+        List<TutorStudentConnection> bids = connectionRepository
+                .findByStudentIdAndStatus(studentId, ConnectionStatus.NEGOTIATING);
+
+        return bids.stream()
+                .map(conn -> {
+                    TutorProfile tutor = conn.getTutor();
+                    Course course = conn.getCourse();
+
+                    Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+                    return StudentBid.builder()
+                            .connectionId(conn.getId())
+                            .requestedAt(conn.getRequestedAt())
+                            .status(conn.getStatus().toString())
+                            .tutorId(tutor.getId())
+                            .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                            .tutorImage(tutor.getProfilePictureUrl())
+                            .tutorHeadline(tutor.getHeadline())
+                            .courseId(course.getId())
+                            .subject(course.getSubject())
+                            .category(course.getCategory())
+                            .teachingMode(course.getTeachingMode())
+                            .location(course.getLocation())
+                            .classesPerMonth(course.getClassesPerMonth())
+                            .startTime(formatTo12Hour(course.getStartTime()))
+                            .endTime(formatTo12Hour(course.getEndTime()))
+                            .fromDay(course.getFromDay())
+                            .toDay(course.getToDay())
+                            .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
+                            .price(course.getPrice())
+                            .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                            .originalPrice(conn.getOriginalPrice())
+                            .studentBidPrice(conn.getStudentCounterOffer())
+                            .tutorOffer(conn.getTutorCounterOffer())
+                            .agreedPrice(conn.getAgreedPrice())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<StudentBid> getStudentCourseBids(Long studentId, Long courseId) {
+        // Get all negotiating connections (bids) for this student and specific course
+        List<TutorStudentConnection> bids = connectionRepository
+                .findByStudentIdAndCourseIdAndStatus(studentId, courseId, ConnectionStatus.NEGOTIATING);
+
+        return bids.stream()
+                .map(conn -> {
+                    TutorProfile tutor = conn.getTutor();
+                    Course course = conn.getCourse();
+
+                    Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+                    return StudentBid.builder()
+                            .connectionId(conn.getId())
+                            .requestedAt(conn.getRequestedAt())
+                            .status(conn.getStatus().toString())
+                            .tutorId(tutor.getId())
+                            .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                            .tutorImage(tutor.getProfilePictureUrl())
+                            .tutorHeadline(tutor.getHeadline())
+                            .courseId(course.getId())
+                            .subject(course.getSubject())
+                            .category(course.getCategory())
+                            .teachingMode(course.getTeachingMode())
+                            .location(course.getLocation())
+                            .classesPerMonth(course.getClassesPerMonth())
+                            .startTime(formatTo12Hour(course.getStartTime()))
+                            .endTime(formatTo12Hour(course.getEndTime()))
+                            .fromDay(course.getFromDay())
+                            .toDay(course.getToDay())
+                            .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
+                            .price(course.getPrice())
+                            .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                            .originalPrice(conn.getOriginalPrice())
+                            .studentBidPrice(conn.getStudentCounterOffer())
+                            .tutorOffer(conn.getTutorCounterOffer())
+                            .agreedPrice(conn.getAgreedPrice())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public StudentBid getStudentBidDetails(Long connectionId) {
+        TutorStudentConnection connection = connectionRepository.findById(connectionId)
+                .orElseThrow(() -> new RuntimeException("Connection not found"));
+
+        // Verify this is a bid (NEGOTIATING status)
+        if (connection.getStatus() != ConnectionStatus.NEGOTIATING) {
+            throw new RuntimeException("This is not an active bid");
+        }
+
+        TutorProfile tutor = connection.getTutor();
+        Course course = connection.getCourse();
+
+        Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+        return StudentBid.builder()
+                .connectionId(connection.getId())
+                .requestedAt(connection.getRequestedAt())
+                .status(connection.getStatus().toString())
+                .tutorId(tutor.getId())
+                .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                .tutorImage(tutor.getProfilePictureUrl())
+                .tutorHeadline(tutor.getHeadline())
+                .courseId(course.getId())
+                .subject(course.getSubject())
+                .category(course.getCategory())
+                .teachingMode(course.getTeachingMode())
+                .location(course.getLocation())
+                .classesPerMonth(course.getClassesPerMonth())
+                .startTime(formatTo12Hour(course.getStartTime()))
+                .endTime(formatTo12Hour(course.getEndTime()))
+                .fromDay(course.getFromDay())
+                .toDay(course.getToDay())
+                .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
+                .price(course.getPrice())
+                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                .originalPrice(connection.getOriginalPrice())
+                .studentBidPrice(connection.getStudentCounterOffer())
+                .tutorOffer(connection.getTutorCounterOffer())
+                .agreedPrice(connection.getAgreedPrice())
+                .build();
+    }
+
+//Helper method
+    private String formatTo12Hour(LocalTime time) {
+        if (time == null) return "N/A";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a");
+        return time.format(formatter);
+    }
+
+    private List<String> getDaysInRange(DaysOfWeek from, DaysOfWeek to) {
+        if (from == null || to == null) return new ArrayList<>();
+
+        List<String> days = new ArrayList<>();
+        DaysOfWeek[] allDays = DaysOfWeek.values();
+
+        int start = from.ordinal();
+        int end = to.ordinal();
+
+        for (int i = start; i <= end; i++) {
+            days.add(allDays[i].toString());
+        }
+
+        return days;
+    }
+
 }

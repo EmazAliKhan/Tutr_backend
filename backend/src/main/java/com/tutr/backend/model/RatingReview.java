@@ -17,7 +17,7 @@ public class RatingReview {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "connection_id", nullable = false)
+    @JoinColumn(name = "connection_id", nullable = true)
     private TutorStudentConnection connection;
 
     @ManyToOne

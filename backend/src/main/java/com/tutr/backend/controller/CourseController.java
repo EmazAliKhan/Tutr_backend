@@ -3,6 +3,8 @@ package com.tutr.backend.controller;
 import com.tutr.backend.dto.*;
 import com.tutr.backend.model.Course;
 import com.tutr.backend.model.CourseCategory;
+import com.tutr.backend.model.PriceRange;
+import com.tutr.backend.model.TeachingMode;
 import com.tutr.backend.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -56,8 +58,8 @@ public class CourseController {
     @GetMapping("/{courseId}/student")
     public ResponseEntity<?> getCourseForStudent(@PathVariable Long courseId) {
         try {
-            CourseResponse course = courseService.getCourseByIdForStudent(courseId);
-            return ResponseEntity.ok(course);
+            CourseDetail courseDetail = courseService.getStudentCourseDetail(courseId);
+            return ResponseEntity.ok(courseDetail);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -111,16 +113,19 @@ public class CourseController {
     public ResponseEntity<?> searchAvailableCourses(
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) CourseCategory category) {
+            @RequestParam(required = false) CourseCategory category,
+            @RequestParam(required = false) TeachingMode teachingMode,
+            @RequestParam(required = false) PriceRange priceRange,
+            @RequestParam(required = false) Long studentId) {  // Add studentId for favorite status
         try {
-            List<CourseResponse> courses = courseService.searchAvailableCourses(subject, location, category);
+            List<StudentCourseCard> courses = courseService.searchAvailableCoursesForStudent(
+                    subject, location, category, teachingMode, priceRange, studentId);
             return ResponseEntity.ok(courses);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
         }
     }
-
 
     @GetMapping("/tutor/{tutorProfileId}/unavailable")
     public ResponseEntity<?> getUnavailableCoursesByTutor(@PathVariable Long tutorProfileId) {
@@ -183,6 +188,17 @@ public class CourseController {
             return ResponseEntity.ok(courseDetail);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/student/{studentId}/available")
+    public ResponseEntity<?> getSimpleAvailableCourses(@PathVariable Long studentId){
+        try {
+            List<StudentCourseCard> courses = courseService.getSimpleAvailableCoursesForStudent(studentId);
+            return ResponseEntity.ok(courses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching courses: " + e.getMessage());
         }
     }
 
