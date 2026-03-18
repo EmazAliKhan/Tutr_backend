@@ -37,10 +37,24 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     @Query("SELECT c FROM TutorStudentConnection c WHERE c.status = 'NEGOTIATING'")
     List<TutorStudentConnection> findNegotiations();
 
-
-    // Add this method to your existing TutorStudentConnectionRepository
+    // Find by course ID and status
     @Query("SELECT c FROM TutorStudentConnection c WHERE c.course.id = :courseId AND c.status = :status")
     List<TutorStudentConnection> findByCourseIdAndStatus(@Param("courseId") Long courseId, @Param("status") ConnectionStatus status);
+
+    // ============ ADD THIS METHOD ============
+    // Find by student ID, course ID, and status
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.student.id = :studentId AND c.course.id = :courseId AND c.status = :status")
+    List<TutorStudentConnection> findByStudentIdAndCourseIdAndStatus(
+            @Param("studentId") Long studentId,
+            @Param("courseId") Long courseId,
+            @Param("status") ConnectionStatus status);
+
+    // Add this method
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.course.id = :courseId AND c.status = :status")
+    List<TutorStudentConnection> findByTutorIdAndCourseIdAndStatus(
+            @Param("tutorId") Long tutorId,
+            @Param("courseId") Long courseId,
+            @Param("status") ConnectionStatus status);
 
     // Find a specific connection by ID (for details)
     Optional<TutorStudentConnection> findById(Long connectionId);
@@ -52,5 +66,4 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
             "WHERE c.tutor.id = :tutorId AND c.status = :status " +
             "ORDER BY c.confirmedAt DESC")
     List<TutorStudentConnection> findTutorStudentsWithDetails(@Param("tutorId") Long tutorId, @Param("status") ConnectionStatus status);
-
 }

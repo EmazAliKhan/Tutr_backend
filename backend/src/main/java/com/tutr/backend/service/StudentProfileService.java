@@ -27,7 +27,7 @@ public class StudentProfileService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // VALIDATE STUDENT AGE - Must be at least 15
+        // VALIDATE STUDENT AGE - Must be at least 16
         AgeValidator.validateStudentAge(request.getDateOfBirth());
 
         // Verify user is a student

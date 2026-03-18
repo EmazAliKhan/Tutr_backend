@@ -1,6 +1,7 @@
 package com.tutr.backend.repository;
 
 import com.tutr.backend.model.Course;
+import com.tutr.backend.model.TeachingMode;
 import com.tutr.backend.model.TutorProfile;
 import com.tutr.backend.model.CourseCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,11 +36,17 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.isAvailable = true AND " +
             "(:subject IS NULL OR LOWER(c.subject) LIKE LOWER(CONCAT('%', :subject, '%'))) AND " +
             "(:location IS NULL OR LOWER(c.location) LIKE LOWER(CONCAT('%', :location, '%'))) AND " +
-            "(:category IS NULL OR c.category = :category)")
+            "(:category IS NULL OR c.category = :category) AND " +
+            "(:teachingMode IS NULL OR c.teachingMode = :teachingMode) AND " +
+            "(:minPrice IS NULL OR c.price >= :minPrice) AND " +
+            "(:maxPrice IS NULL OR c.price <= :maxPrice)")
     List<Course> searchAvailableCourses(
             @Param("subject") String subject,
             @Param("location") String location,
-            @Param("category") CourseCategory category);
+            @Param("category") CourseCategory category,
+            @Param("teachingMode") TeachingMode teachingMode,
+            @Param("minPrice") Double minPrice,
+            @Param("maxPrice") Double maxPrice);
 
     // ============  RECOMMENDATION METHODS ============
 

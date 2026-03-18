@@ -23,8 +23,8 @@ public class CourseResponse {
     private DaysOfWeek fromDay;
     private DaysOfWeek toDay;
     private List<String> daysRange;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private String startTime;
+    private String endTime;
     private Integer classesPerMonth;
     private Double price;
     private Boolean isAvailable;

@@ -19,6 +19,10 @@ public class FavoriteService {
     private final StudentProfileRepository studentRepository;
     private final CourseRepository courseRepository;
 
+
+
+
+
     @Transactional
     public String addToFavorites(Long studentId, Long courseId) {
         // Check if student exists
@@ -111,5 +115,12 @@ public class FavoriteService {
 
     public boolean isFavorite(Long studentId, Long courseId) {
         return favoriteRepository.existsByStudentIdAndCourseId(studentId, courseId);
+    }
+
+    public List<Long> getFavoriteCourseIds(Long studentId) {
+        return favoriteRepository.findByStudentId(studentId)
+                .stream()
+                .map(favorite -> favorite.getCourse().getId())
+                .collect(Collectors.toList());
     }
 }

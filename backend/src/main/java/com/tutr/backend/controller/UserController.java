@@ -82,6 +82,8 @@ import com.tutr.backend.service.StudentProfileService;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/register")
@@ -136,15 +138,51 @@ public class UserController {
         }
     }
 
-    // EDIT TUTOR PROFILE - NEW
+    // EDIT TUTOR PROFILE - NEW with Image Validation
     @PutMapping(value = "/tutor/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editTutorProfile(@ModelAttribute EditTutorProfileRequest request) {
         try {
             System.out.println("===== EDITING TUTOR PROFILE =====");
             System.out.println("Profile ID: " + request.getProfileId());
             System.out.println("New First Name: " + request.getFirstName());
-            System.out.println("New Image: " + (request.getProfileImage() != null ?
-                    request.getProfileImage().getOriginalFilename() : "No change"));
+
+            // ============ IMAGE VALIDATION ============
+            if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
+                String contentType = request.getProfileImage().getContentType();
+                String originalFilename = request.getProfileImage().getOriginalFilename();
+
+                System.out.println("New Image: " + originalFilename);
+                System.out.println("Content Type: " + contentType);
+
+                // Allowed image types
+                List<String> allowedTypes = Arrays.asList("image/jpeg", "image/jpg", "image/png");
+                List<String> allowedExtensions = Arrays.asList(".jpeg", ".jpg", ".png");
+
+                // Validate content type
+                if (contentType == null || !allowedTypes.contains(contentType.toLowerCase())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Error: Only JPEG, JPG, and PNG images are allowed. Received: " + contentType);
+                }
+
+                // Validate file extension
+                if (originalFilename != null) {
+                    String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+                    if (!allowedExtensions.contains(fileExtension)) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body("Error: Invalid file extension. Only .jpeg, .jpg, .png are allowed. Received: " + fileExtension);
+                    }
+                }
+
+                // Optional: Validate file size (max 5MB)
+                long maxSize = 5 * 1024 * 1024; // 5MB
+                if (request.getProfileImage().getSize() > maxSize) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Error: File size too large. Maximum size is 5MB. Your file: " +
+                                    (request.getProfileImage().getSize() / (1024 * 1024)) + "MB");
+                }
+            } else {
+                System.out.println("New Image: No change");
+            }
 
             TutorProfile updatedProfile = userService.editTutorProfile(request);
 
@@ -187,6 +225,7 @@ public class UserController {
         }
     }
 
+    // EDIT student profile
     // EDIT student profile
     @PutMapping(value = "/student/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editStudentProfile(@ModelAttribute EditStudentProfileRequest request) {
