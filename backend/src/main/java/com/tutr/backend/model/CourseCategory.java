@@ -1,7 +1,7 @@
 package com.tutr.backend.model;
 
 public enum CourseCategory {
-    METRIC,
+    MATRIC,
     INTERMEDIATE,
     O_LEVEL,
     A_LEVEL,

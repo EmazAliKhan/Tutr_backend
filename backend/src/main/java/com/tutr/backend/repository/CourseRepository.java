@@ -54,7 +54,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.isAvailable = true AND LOWER(c.location) LIKE LOWER(CONCAT('%', :location, '%'))")
     List<Course> findAvailableByLocation(@Param("location") String location);
 
-    // RECOMMENDED COURSES - JPQL VERSION (FIX 3)
+    // RECOMMENDED COURSES -
     @Query("SELECT c, AVG(r.rating) as avgRating " +
             "FROM Course c " +
             "LEFT JOIN RatingReview r ON c.id = r.course.id " +
