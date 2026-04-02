@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,36 +29,45 @@ public class CourseService {
     private final RatingReviewRepository ratingRepository;
     private final FavoriteService favoriteService;
     private final BlockService blockService;
+// ============ HELPER METHODS FOR TIME PARSING ============
 
-    // ============ HELPER METHODS FOR TIME PARSING ============
-
-    // Helper method to parse 12-hour time format
-    // Helper method to parse 12-hour time format without
+    // Helper method to parse 12-hour time format with AM/PM
     private LocalTime parseTime(String timeStr) {
         if (timeStr == null || timeStr.isEmpty()) {
             throw new RuntimeException("Time is required");
         }
 
         try {
-            // Try parsing with pattern "HH:mm" (24-hour format)
-            DateTimeFormatter formatter24 = DateTimeFormatter.ofPattern("HH:mm");
-            return LocalTime.parse(timeStr, formatter24);
+            // Try parsing with pattern "hh:mm a" (e.g., "02:00 PM")
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
+            return LocalTime.parse(timeStr.toUpperCase(), formatter);
         } catch (DateTimeParseException e1) {
             try {
-                // Try parsing with pattern "hh:mm" (12-hour format)
-                DateTimeFormatter formatter12 = DateTimeFormatter.ofPattern("hh:mm");
-                LocalTime time = LocalTime.parse(timeStr, formatter12);
-                // Assume it's AM if hour < 12? Actually just return as is
-                return time;
+                // Try parsing with pattern "h:mm a" (e.g., "2:00 PM")
+                DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
+                return LocalTime.parse(timeStr.toUpperCase(), formatter2);
             } catch (DateTimeParseException e2) {
-                throw new RuntimeException("Invalid time format. Please use format like '02:00' or '14:00'");
+                try {
+                    // Try parsing with pattern "hh:mma" (e.g., "02:00PM")
+                    DateTimeFormatter formatter3 = DateTimeFormatter.ofPattern("hh:mma", Locale.ENGLISH);
+                    return LocalTime.parse(timeStr.toUpperCase(), formatter3);
+                } catch (DateTimeParseException e3) {
+                    try {
+                        // Try parsing with pattern "h:mma" (e.g., "2:00PM")
+                        DateTimeFormatter formatter4 = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
+                        return LocalTime.parse(timeStr.toUpperCase(), formatter4);
+                    } catch (DateTimeParseException e4) {
+                        throw new RuntimeException("Invalid time format. Please use 12-hour format like '02:00 PM' or '2:00 PM'");
+                    }
+                }
             }
         }
     }
-    // Helper method to format time to 12-hour format
+
+    // Helper method to format time to 12-hour format with AM/PM
     private String formatTo12Hour(LocalTime time) {
         if (time == null) return "N/A";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a");
         return time.format(formatter);
     }
 

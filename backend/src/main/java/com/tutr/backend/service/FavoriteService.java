@@ -90,7 +90,7 @@ public class FavoriteService {
 
         // Filter to ONLY include available courses
         return favorites.stream()
-                .filter(favorite -> favorite.getCourse().getIsAvailable()) // ← THIS LINE FILTERS OUT UNAVAILABLE
+                .filter(favorite -> favorite.getCourse().getIsAvailable()) //
                 .map(favorite -> {
                     Course course = favorite.getCourse();
                     TutorProfile tutor = course.getTutorProfile();
