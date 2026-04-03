@@ -26,6 +26,7 @@ public class ProfileImageController {
             "image/png"
     );
 
+
     // Allowed file extensions
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
             ".jpeg",

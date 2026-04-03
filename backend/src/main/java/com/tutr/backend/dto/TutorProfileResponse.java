@@ -13,12 +13,12 @@ public class TutorProfileResponse {
     private String lastName;
     private String phoneNumber;
     private String headline;
-    private String profilePictureUrl;  // Current image URL
+    private String profilePictureUrl;
     private String gender;
     private LocalDate dateOfBirth;
     private String location;
     private String universityName;
     private String collegeName;
     private String workExperience;
-    private String email;  // User's email
+    private String email;
 }

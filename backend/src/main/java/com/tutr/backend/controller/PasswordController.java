@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class PasswordController {
 
+
     private final UserService userService;
 
     @PostMapping("/change")
