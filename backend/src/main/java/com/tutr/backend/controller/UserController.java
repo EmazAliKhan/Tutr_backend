@@ -1,70 +1,3 @@
-//package com.tutr.backend.controller;
-//
-//import com.tutr.backend.dto.RoleSignupRequest;
-//import com.tutr.backend.dto.TutorProfileRequest;
-//import com.tutr.backend.model.TutorProfile;
-//import com.tutr.backend.model.User;
-//import com.tutr.backend.service.UserService;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.format.annotation.DateTimeFormat;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.*;
-//import org.springframework.http.MediaType;
-//import org.springframework.web.multipart.MultipartFile;
-//import com.tutr.backend.model.StudentProfile;
-//import com.tutr.backend.dto.StudentProfileRequest;
-//import com.tutr.backend.service.StudentProfileService;
-//
-//import java.time.LocalDate;
-//
-//@RestController
-//@RequestMapping("/api/register")
-//@RequiredArgsConstructor
-//public class UserController {
-//
-//    private final UserService userService;
-//
-//    // Step 2: create user
-//    @PostMapping("/role")
-//    public User registerUser(@RequestBody RoleSignupRequest request) {
-//        return userService.registerUser(request);
-//    }
-//
-//////     Step 3: complete profile
-////    @PostMapping("/tutor/profile")
-////    public TutorProfile completeTutorProfile(@RequestBody TutorProfileRequest request) {
-////        return userService.completeTutorProfile(request);
-////    }
-////
-////}
-//
-//// In your UserController - Step 3 modified to NOT expect image
-//@PostMapping("/tutor/profile")
-//public ResponseEntity<?> createTutorProfile(@RequestBody TutorProfileRequest request) {
-//    try {
-//        // Remove image from request if present
-//        request.setProfileImage(null);
-//
-//        TutorProfile profile = userService.completeTutorProfile(request);
-//        return ResponseEntity.ok(profile);
-//    } catch (Exception e) {
-//        return ResponseEntity.status(500).body("Error: " + e.getMessage());
-//    }
-//}
-//
-//
-//@PostMapping("/student/profile")
-//public ResponseEntity<?> createStudentProfile(@RequestBody StudentProfileRequest request) {
-//    try {
-//        StudentProfile profile = studentProfileService.createStudentProfile(request);
-//        return ResponseEntity.ok(profile);
-//        } catch (Exception e) {
-//        return ResponseEntity.status(500).body("Error: " + e.getMessage());
-//        }
-//    }
-//
-//}
-
 package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.*;
@@ -90,14 +23,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
-    private final StudentProfileService studentProfileService;  // ← ADD THIS LINE
 
-//    // Step 2: create user
-//    @PostMapping("/role")
-//    public User registerUser(@RequestBody RoleSignupRequest request) {
-//        return userService.registerUser(request);
-//    }
+    private final UserService userService;
+    private final StudentProfileService studentProfileService;
+
 
     @PostMapping("/role")
     public ResponseEntity<?> registerUser(@RequestBody RoleSignupRequest request) {
@@ -126,7 +55,7 @@ public class UserController {
     }
 
 
-    // GET TUTOR PROFILE FOR EDITING - NEW
+    // GET TUTOR PROFILE FOR EDITING
     @GetMapping("/tutor/profile/{profileId}")
     public ResponseEntity<?> getTutorProfileForEdit(@PathVariable Long profileId) {
         try {
@@ -138,7 +67,7 @@ public class UserController {
         }
     }
 
-    // EDIT TUTOR PROFILE - NEW with Image Validation
+    // EDIT TUTOR PROFILE -  with Image Validation
     @PutMapping(value = "/tutor/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editTutorProfile(@ModelAttribute EditTutorProfileRequest request) {
         try {
@@ -201,6 +130,34 @@ public class UserController {
     }
 
 
+
+    // NEW: JSON endpoint for text-only profile update (NO IMAGE)
+    @PutMapping(value = "/tutor/profile/edit-json")
+    public ResponseEntity<?> editTutorProfileJson(@RequestBody EditTutorProfileRequest request) {
+        try {
+            System.out.println("===== EDITING TUTOR PROFILE (JSON) =====");
+            System.out.println("Profile ID: " + request.getProfileId());
+            System.out.println("First Name: " + request.getFirstName());
+
+            // Remove image from request (it will be null anyway)
+            request.setProfileImage(null);
+
+            TutorProfile updatedProfile = userService.editTutorProfile(request);
+
+            System.out.println("Profile updated successfully");
+            return ResponseEntity.ok(updatedProfile);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
+
+
     // Student Profile Creation
     @PostMapping("/student/profile")
     public ResponseEntity<?> createStudentProfile(@RequestBody StudentProfileRequest request) {
@@ -251,7 +208,4 @@ public class UserController {
                     .body("Error: " + e.getMessage());
         }
     }
-
-
-
 }

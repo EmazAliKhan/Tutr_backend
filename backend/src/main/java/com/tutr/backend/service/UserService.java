@@ -124,7 +124,7 @@ public class UserService {
         }
 
         // Validate email domain
-        EmailValidator.validate(request.getEmail());  // ← ADD THIS LINE
+        EmailValidator.validate(request.getEmail());
         // Convert role string to enum
         Role role = Role.valueOf(request.getRole().toUpperCase());
 

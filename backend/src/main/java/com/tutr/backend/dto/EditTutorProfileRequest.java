@@ -17,5 +17,5 @@ public class EditTutorProfileRequest {
     private String universityName;
     private String collegeName;
     private String workExperience;
-    private MultipartFile profileImage;  // New image (optional)
+    private MultipartFile profileImage;
 }

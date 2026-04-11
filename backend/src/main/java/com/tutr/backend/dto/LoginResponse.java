@@ -9,7 +9,7 @@ import lombok.Data;
 @Builder
 public class LoginResponse {
     private Long id;
-    private Long profileId;      // ID of tutor_profile or student_profile
+    private Long profileId;
     private String email;
     private Role role;
     private AccountStatus accountStatus;

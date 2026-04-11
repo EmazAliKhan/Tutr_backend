@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
+
     private final UserRepository userRepository;
     private final TutorProfileRepository tutorProfileRepository;
     private final StudentProfileRepository studentProfileRepository;
@@ -67,13 +68,19 @@ public class AuthService {
         switch (user.getRegistrationStep()) {
             case 1:
                 throw new RuntimeException("Please complete your student profile first");
-            case 2:
-                // Step 2 - Profile completed, can login
-                break;
+//            case 2:
+//                // Step 2 - Profile completed, can login
+//                break;
             default:
                 // Any other step, allow login
                 break;
         }
+    }
+
+    // Get user by email (for frontend to fetch userId)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
     private void validateTutorLogin(User user) {
@@ -107,6 +114,7 @@ public class AuthService {
                 default -> "/student/dashboard";
             };
         }
+
 
         // For TUTORS
         return switch (user.getRegistrationStep()) {

@@ -23,7 +23,8 @@ public class StudentImageController {
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg",
             "image/jpg",
-            "image/png"
+            "image/png",
+            "application/octet-stream"
     );
 
     // Allowed file extensions
@@ -31,6 +32,7 @@ public class StudentImageController {
             ".jpeg",
             ".jpg",
             ".png"
+
     );
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
