@@ -40,8 +40,8 @@ public class BlockService {
 
         // Create block entity - using correct field names from entity
         com.tutr.backend.model.BlockedTutor blockEntity = com.tutr.backend.model.BlockedTutor.builder()
-                .student(student)      // This matches the field name 'student'
-                .tutor(tutor)          // This matches the field name 'tutor'
+                .student(student)
+                .tutor(tutor)
                 .blockedAt(LocalDateTime.now())
                 .build();
 

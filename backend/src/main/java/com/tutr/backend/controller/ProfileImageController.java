@@ -23,7 +23,8 @@ public class ProfileImageController {
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg",
             "image/jpg",
-            "image/png"
+            "image/png",
+            "application/octet-stream"
     );
 
     // Allowed file extensions
@@ -36,6 +37,7 @@ public class ProfileImageController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadProfileImage(
             @RequestParam("tutorProfileId") Long tutorProfileId,
+            @RequestParam(value = "oldImageUrl", required = false) String oldImageUrl,  // ADD THIS
             @RequestParam("profileImage") MultipartFile profileImage) {
 
         try {
@@ -44,15 +46,14 @@ public class ProfileImageController {
             System.out.println("File name: " + profileImage.getOriginalFilename());
             System.out.println("File size: " + profileImage.getSize() + " bytes");
             System.out.println("File content type: " + profileImage.getContentType());
+            System.out.println("Old image URL: " + oldImageUrl);  // ADD THIS
 
             // ============ VALIDATION ============
 
-            // Check if file is empty
             if (profileImage.isEmpty()) {
                 return ResponseEntity.badRequest().body("Error: File is empty");
             }
 
-            // Validate file type
             String contentType = profileImage.getContentType();
             if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
                 return ResponseEntity.badRequest().body(
@@ -60,7 +61,6 @@ public class ProfileImageController {
                 );
             }
 
-            // Validate file extension
             String originalFilename = profileImage.getOriginalFilename();
             if (originalFilename != null) {
                 String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
@@ -71,7 +71,6 @@ public class ProfileImageController {
                 }
             }
 
-            // Optional: Validate file size (e.g., max 5MB)
             long maxSize = 5 * 1024 * 1024; // 5MB
             if (profileImage.getSize() > maxSize) {
                 return ResponseEntity.badRequest().body(
@@ -84,17 +83,22 @@ public class ProfileImageController {
             TutorProfile tutorProfile = tutorProfileRepository.findById(tutorProfileId)
                     .orElseThrow(() -> new RuntimeException("Tutor profile not found with id: " + tutorProfileId));
 
-            // 2. Save the image using the working FileStorageService
-            String imageUrl = fileStorageService.storeProfileImage(profileImage, tutorProfile.getUser().getId());
-            System.out.println("Image saved at: " + imageUrl);
+            // 2. DELETE OLD IMAGE IF PROVIDED
+            if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                fileStorageService.deleteFile(oldImageUrl);
+                System.out.println("Old image deleted: " + oldImageUrl);
+            }
 
-            // 3. Update the tutor profile with the image URL
+            // 3. Save the new image
+            String imageUrl = fileStorageService.storeProfileImage(profileImage, tutorProfile.getUser().getId());
+            System.out.println("New image saved at: " + imageUrl);
+
+            // 4. Update the tutor profile with the new image URL
             tutorProfile.setProfilePictureUrl(imageUrl);
 
-            // 4. Save the updated profile
+            // 5. Save the updated profile
             TutorProfile updatedProfile = tutorProfileRepository.save(tutorProfile);
             System.out.println("Tutor profile updated. Profile ID: " + updatedProfile.getId());
-            System.out.println("Image URL saved in DB: " + updatedProfile.getProfilePictureUrl());
 
             System.out.println("=== PROFILE IMAGE UPLOAD COMPLETED ===");
 

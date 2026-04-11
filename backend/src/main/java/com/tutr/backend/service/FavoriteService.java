@@ -19,10 +19,6 @@ public class FavoriteService {
     private final StudentProfileRepository studentRepository;
     private final CourseRepository courseRepository;
 
-
-
-
-
     @Transactional
     public String addToFavorites(Long studentId, Long courseId) {
         // Check if student exists

@@ -14,6 +14,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +26,40 @@ public class ConnectionService {
     private final StudentProfileRepository studentRepository;
     private final TutorProfileRepository tutorRepository;
     private final RatingReviewRepository ratingRepository;
+
+//    @Transactional
+//    public TutorStudentConnection requestConnection(ConnectionRequest request) {
+//        Course course = courseRepository.findById(request.getCourseId())
+//                .orElseThrow(() -> new RuntimeException("Course not found"));
+//
+//        StudentProfile student = studentRepository.findById(request.getStudentId())
+//                .orElseThrow(() -> new RuntimeException("Student not found"));
+//
+//        if (!course.getIsAvailable()) {
+//            throw new RuntimeException("Course is not available");
+//        }
+//
+//        connectionRepository.findByCourseIdAndStudentId(course.getId(), student.getId())
+//                .ifPresent(conn -> {
+//                    throw new RuntimeException("Connection request already exists");
+//                });
+//
+//        TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
+//                .course(course)
+//                .student(student)
+//                .tutor(course.getTutorProfile())
+//                .originalPrice(course.getPrice())
+//                .requestedAt(LocalDateTime.now());
+//
+//        if (request.getSuggestedPrice() != null) {
+//            builder.studentCounterOffer(request.getSuggestedPrice())
+//                    .status(ConnectionStatus.NEGOTIATING);
+//        } else {
+//            builder.status(ConnectionStatus.PENDING);
+//        }
+//
+//        return connectionRepository.save(builder.build());
+//    }
 
     @Transactional
     public TutorStudentConnection requestConnection(ConnectionRequest request) {
@@ -38,11 +73,39 @@ public class ConnectionService {
             throw new RuntimeException("Course is not available");
         }
 
-        connectionRepository.findByCourseIdAndStudentId(course.getId(), student.getId())
-                .ifPresent(conn -> {
-                    throw new RuntimeException("Connection request already exists");
-                });
+        // Check if connection already exists (including disconnected ones)
+        Optional<TutorStudentConnection> existingConnection = connectionRepository
+                .findByCourseIdAndStudentId(course.getId(), student.getId());
 
+        if (existingConnection.isPresent()) {
+            TutorStudentConnection conn = existingConnection.get();
+
+            // If connection is DISCONNECTED or CANCELLED, create a NEW connection instead of reusing
+            if (conn.getStatus() == ConnectionStatus.DISCONNECTED ||
+                    conn.getStatus() == ConnectionStatus.CANCELLED) {
+
+                // Create a brand new connection instead of reactivating the old one
+                TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
+                        .course(course)
+                        .student(student)
+                        .tutor(course.getTutorProfile())
+                        .originalPrice(course.getPrice())
+                        .requestedAt(LocalDateTime.now());
+
+                if (request.getSuggestedPrice() != null) {
+                    builder.studentCounterOffer(request.getSuggestedPrice())
+                            .status(ConnectionStatus.NEGOTIATING);
+                } else {
+                    builder.status(ConnectionStatus.PENDING);
+                }
+
+                return connectionRepository.save(builder.build());
+            } else {
+                throw new RuntimeException("Connection request already exists");
+            }
+        }
+
+        // Create new connection
         TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
                 .course(course)
                 .student(student)
