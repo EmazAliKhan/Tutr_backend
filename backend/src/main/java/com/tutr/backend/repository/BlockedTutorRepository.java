@@ -11,7 +11,7 @@ public interface BlockedTutorRepository extends JpaRepository<BlockedTutor, Long
 
     List<BlockedTutor> findByStudentId(Long studentId);
 
-    Optional<BlockedTutor> findByStudentIdAndTutorId(Long studentId, Long tutorId);
+    //Optional<BlockedTutor> findByStudentIdAndTutorId(Long studentId, Long tutorId);
 
     boolean existsByStudentIdAndTutorId(Long studentId, Long tutorId);
 

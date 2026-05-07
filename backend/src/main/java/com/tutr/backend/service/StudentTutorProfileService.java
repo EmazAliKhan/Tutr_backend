@@ -18,11 +18,15 @@ public class StudentTutorProfileService {
     private final RatingReviewRepository ratingRepository;
     private final TutorStudentConnectionRepository connectionRepository;
     private final FavoriteService favoriteService;
+    private final BlockService blockService;
 
     public StudentTutorProfile getTutorProfileForStudent(Long studentId, Long tutorId) {
         // Get tutor info
         TutorProfile tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new RuntimeException("Tutor not found"));
+
+        // ============ CHECK IF TUTOR IS BLOCKED ============
+        boolean isBlocked = blockService.isTutorBlocked(studentId, tutorId);
 
         // Get student's favorite course IDs
         List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
@@ -53,6 +57,7 @@ public class StudentTutorProfileService {
                             .subject(course.getSubject())
                             .category(course.getCategory())
                             .teachingMode(course.getTeachingMode())
+                            .location(course.getLocation())
                             .price(course.getPrice())
                             .averageRating(courseAvg != null ? Math.round(courseAvg * 10) / 10.0 : 0.0)
                             .tutorName(tutorFullName)
@@ -68,6 +73,8 @@ public class StudentTutorProfileService {
                 .tutorImage(tutor.getProfilePictureUrl())
                 .tutorHeadline(tutor.getHeadline())
                 .tutorLocation(tutor.getLocation())
+                .gender(tutor.getGender())
+                .dateOfBirth(tutor.getDateOfBirth())
                 .universityName(tutor.getUniversityName())
                 .collegeName(tutor.getCollegeName())
                 .workExperience(tutor.getWorkExperience())
@@ -75,6 +82,7 @@ public class StudentTutorProfileService {
                 .totalRatings(totalRatings != null ? totalRatings : 0)
                 .totalCourses(courses.size())
                 .totalStudents(totalStudents)
+                .isBlocked(isBlocked)
                 .courses(courseDTOs)
                 .build();
     }

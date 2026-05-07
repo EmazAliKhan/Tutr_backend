@@ -16,7 +16,7 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     List<TutorStudentConnection> findByTutorId(Long tutorId);
 
     // Find active connections for a student
-    List<TutorStudentConnection> findByStudentIdAndIsActiveTrue(Long studentId);
+    //List<TutorStudentConnection> findByStudentIdAndIsActiveTrue(Long studentId);
 
     // Find connections by status for a tutor
     List<TutorStudentConnection> findByTutorIdAndStatus(Long tutorId, ConnectionStatus status);
@@ -30,12 +30,12 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     boolean existsByCourseIdAndStatusIn(Long courseId, List<ConnectionStatus> statuses);
 
     // Get all pending requests for a tutor
-    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.status = 'PENDING'")
-    List<TutorStudentConnection> findPendingRequestsForTutor(@Param("tutorId") Long tutorId);
+//    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.status = 'PENDING'")
+//    List<TutorStudentConnection> findPendingRequestsForTutor(@Param("tutorId") Long tutorId);
 
     // Get all ongoing negotiations
-    @Query("SELECT c FROM TutorStudentConnection c WHERE c.status = 'NEGOTIATING'")
-    List<TutorStudentConnection> findNegotiations();
+//    @Query("SELECT c FROM TutorStudentConnection c WHERE c.status = 'NEGOTIATING'")
+//    List<TutorStudentConnection> findNegotiations();
 
     // Find by course ID and status
     @Query("SELECT c FROM TutorStudentConnection c WHERE c.course.id = :courseId AND c.status = :status")
@@ -59,11 +59,26 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     // Find a specific connection by ID (for details)
     Optional<TutorStudentConnection> findById(Long connectionId);
 
-    // Find all connections for a tutor with student details
-    @Query("SELECT c FROM TutorStudentConnection c " +
-            "JOIN FETCH c.student s " +
-            "JOIN FETCH c.course co " +
-            "WHERE c.tutor.id = :tutorId AND c.status = :status " +
-            "ORDER BY c.confirmedAt DESC")
-    List<TutorStudentConnection> findTutorStudentsWithDetails(@Param("tutorId") Long tutorId, @Param("status") ConnectionStatus status);
+    boolean existsByCourseIdAndStudentIdAndStatusIn(Long courseId, Long studentId, List<ConnectionStatus> statuses);
+
+    // With this - returns the latest connection ordered by requestedAt desc
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.student.id = :studentId AND c.course.id = :courseId ORDER BY c.requestedAt DESC")
+    List<TutorStudentConnection> findByStudentIdAndCourseIdOrderByRequestedAtDesc(
+            @Param("studentId") Long studentId,
+            @Param("courseId") Long courseId
+    );
+
+
+    // Get all student connections for a specific course (both PENDING and NEGOTIATING)
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.student.id = :studentId AND c.course.id = :courseId AND c.status IN ('PENDING', 'NEGOTIATING')")
+    List<TutorStudentConnection> findStudentCourseRequests(
+            @Param("studentId") Long studentId,
+            @Param("courseId") Long courseId);
+
+//    @Query("SELECT c FROM TutorStudentConnection c " +
+//            "JOIN FETCH c.student s " +
+//            "JOIN FETCH c.course co " +
+//            "WHERE c.tutor.id = :tutorId AND c.status = :status " +
+//            "ORDER BY c.confirmedAt DESC")
+//    List<TutorStudentConnection> findTutorStudentsWithDetails(@Param("tutorId") Long tutorId, @Param("status") ConnectionStatus status);
 }

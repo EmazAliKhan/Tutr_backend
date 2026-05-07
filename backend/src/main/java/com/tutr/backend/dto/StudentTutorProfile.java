@@ -2,6 +2,8 @@ package com.tutr.backend.dto;
 
 import lombok.Builder;
 import lombok.Data;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -13,6 +15,8 @@ public class StudentTutorProfile {
     private String tutorImage;
     private String tutorHeadline;
     private String tutorLocation;
+    private String gender;
+    private LocalDate dateOfBirth;
     private String universityName;
     private String collegeName;
     private String workExperience;
@@ -22,6 +26,9 @@ public class StudentTutorProfile {
     private Integer totalRatings;
     private Integer totalCourses;
     private Integer totalStudents;
+
+    //Blocked Status
+    private Boolean isBlocked;
 
     // All Courses
     private List<StudentCourseCard> courses;

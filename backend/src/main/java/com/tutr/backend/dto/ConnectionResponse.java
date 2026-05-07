@@ -1,6 +1,8 @@
 package com.tutr.backend.dto;
 
 import com.tutr.backend.model.ConnectionStatus;
+import com.tutr.backend.model.CourseCategory;
+import com.tutr.backend.model.TeachingMode;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ public class ConnectionResponse {
     // Tutor info
     private Long tutorId;
     private String tutorName;
+    private String tutorImage;
     private String tutorHeadline;
 
     // Connection details
@@ -32,4 +35,10 @@ public class ConnectionResponse {
     private LocalDateTime requestedAt;
     private LocalDateTime tutorRespondedAt;
     private LocalDateTime lastUpdated;
+
+    // Course dtails
+    private Double averageRating;
+    private String location;
+    private TeachingMode teachingMode;
+    private CourseCategory category;
 }

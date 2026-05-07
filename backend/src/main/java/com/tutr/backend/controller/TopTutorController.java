@@ -27,4 +27,21 @@ public class TopTutorController {
                     .body("Error fetching top tutors: " + e.getMessage());
         }
     }
+
+    @GetMapping("/{studentId}")
+    public ResponseEntity<?> getTopTutorsForStudent(
+            @PathVariable Long studentId,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        try {
+            return ResponseEntity.ok(
+                    ratingService.getTopTutorsForStudent(studentId, limit)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching top tutors: " + e.getMessage());
+        }
+    }
+
 }

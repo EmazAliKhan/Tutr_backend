@@ -26,7 +26,7 @@ public class StudentDashboardService {
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
         // Get top tutors (filter out blocked ones)
-        List<TopTutor> allTopTutors = ratingService.getTopTutors(10);
+        List<TopTutor> allTopTutors = ratingService.getTopTutors(4);
         List<TopTutor> filteredTopTutors = allTopTutors.stream()
                 .filter(tutor -> !blockedTutorIds.contains(tutor.getTutorId()))
                 .limit(5)
@@ -34,7 +34,7 @@ public class StudentDashboardService {
 
         // Get recommended courses (already filtered in the method)
         List<RecommendedCourse> recommendedCourses = ratingService
-                .getRecommendedCoursesForStudent(studentId, 10);
+                .getRecommendedCoursesForStudent(studentId, 5);
 
         return StudentDashboard.builder()
                 .studentId(studentId)

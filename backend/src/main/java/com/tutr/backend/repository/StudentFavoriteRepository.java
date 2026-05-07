@@ -26,7 +26,7 @@ public interface StudentFavoriteRepository extends JpaRepository<StudentFavorite
     // Delete a favorite by student and course
     void deleteByStudentIdAndCourseId(Long studentId, Long courseId);
 
-    // You can remove or comment out the problematic query
+
     // @Query("SELECT f.course, AVG(r.rating) as avgRating ...")
     // List<Object[]> findFavoriteCoursesWithRatings(@Param("studentId") Long studentId);
 }

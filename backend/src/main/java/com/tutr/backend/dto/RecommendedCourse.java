@@ -14,5 +14,7 @@ public class RecommendedCourse {
     private Double averageRating;
     private String tutorName;
     private Long tutorId;
-    private Integer rank; // Recommendation rank
+    private Integer rank;
+    private String location;
+    private Boolean isFavorited;
 }

@@ -182,7 +182,7 @@ public class UserController {
         }
     }
 
-    // EDIT student profile
+
     // EDIT student profile
     @PutMapping(value = "/student/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editStudentProfile(@ModelAttribute EditStudentProfileRequest request) {
@@ -198,6 +198,33 @@ public class UserController {
             System.out.println("Student profile updated successfully");
             System.out.println("===== EDIT COMPLETE =====");
 
+            return ResponseEntity.ok(updatedProfile);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
+
+    // Add this to UserController.java (next to the student endpoints)
+
+    @PutMapping(value = "/student/profile/edit-json")
+    public ResponseEntity<?> editStudentProfileJson(@RequestBody EditStudentProfileRequest request) {
+        try {
+            System.out.println("===== EDITING STUDENT PROFILE (JSON) =====");
+            System.out.println("Profile ID: " + request.getProfileId());
+            System.out.println("First Name: " + request.getFirstName());
+
+            // Remove image from request (it will be null anyway)
+            request.setProfileImage(null);
+
+            StudentProfile updatedProfile = studentProfileService.editStudentProfile(request);
+
+            System.out.println("Student profile updated successfully");
             return ResponseEntity.ok(updatedProfile);
 
         } catch (RuntimeException e) {

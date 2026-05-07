@@ -58,7 +58,7 @@ public class AuthService {
         }
 
         // Set redirect URL
-        builder.redirectUrl(getRedirectUrl(user));
+//        builder.redirectUrl(getRedirectUrl(user));
 
         return builder.build();
     }

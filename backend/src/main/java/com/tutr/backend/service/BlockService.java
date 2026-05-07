@@ -143,24 +143,24 @@ public class BlockService {
                 .collect(Collectors.toList());
     }
 
-    public List<TutorReport> getTutorReports(Long tutorId) {
-        // Verify tutor exists
-        if (!tutorProfileRepository.existsById(tutorId)) {
-            throw new RuntimeException("Tutor not found");
-        }
+//    public List<TutorReport> getTutorReports(Long tutorId) {
+//        // Verify tutor exists
+//        if (!tutorProfileRepository.existsById(tutorId)) {
+//            throw new RuntimeException("Tutor not found");
+//        }
+//
+//        return reportRepository.findByTutorId(tutorId)
+//                .stream()
+//                .map(this::convertToReportDTO)
+//                .collect(Collectors.toList());
+//    }
 
-        return reportRepository.findByTutorId(tutorId)
-                .stream()
-                .map(this::convertToReportDTO)
-                .collect(Collectors.toList());
-    }
-
-    public TutorReport getReportById(Long reportId) {
-        com.tutr.backend.model.TutorReport entity = reportRepository.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-
-        return convertToReportDTO(entity);
-    }
+//    public TutorReport getReportById(Long reportId) {
+//        com.tutr.backend.model.TutorReport entity = reportRepository.findById(reportId)
+//                .orElseThrow(() -> new RuntimeException("Report not found"));
+//
+//        return convertToReportDTO(entity);
+//    }
 
     // ============ HELPER METHODS ============
 

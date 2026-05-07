@@ -5,6 +5,7 @@ public enum AccountStatus {
     ACTIVE,
     REJECTED,
     SUSPENDED
+
 }
 
 

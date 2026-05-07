@@ -1,5 +1,6 @@
 package com.tutr.backend.dto;
 
+import com.tutr.backend.model.ConnectionStatus;
 import com.tutr.backend.model.CourseCategory;
 import com.tutr.backend.model.TeachingMode;
 import com.tutr.backend.model.DaysOfWeek;
@@ -40,6 +41,7 @@ public class CourseDetail {
     private Integer pendingRequests;
 
     // Tutor Info
+    private Long tutorId;
     private String tutorName;
     private String tutorImage;
     private String tutorHeadline;
@@ -47,4 +49,11 @@ public class CourseDetail {
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Connections
+    private Long connectionId;
+    private ConnectionStatus connectionStatus;
+
+    // Blocked Status
+    private Boolean isBlocked;
 }

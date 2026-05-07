@@ -11,15 +11,15 @@ public interface TutorReportRepository extends JpaRepository<TutorReport, Long> 
 
     List<TutorReport> findByStudentId(Long studentId);
 
-    List<TutorReport> findByTutorId(Long tutorId);
-
-    List<TutorReport> findByStatus(ReportStatus status);
-
     boolean existsByStudentIdAndTutorId(Long studentId, Long tutorId);
 
-    @Query("SELECT COUNT(r) FROM TutorReport r WHERE r.tutor.id = :tutorId")
-    Long getReportCountForTutor(@Param("tutorId") Long tutorId);
+    //    List<TutorReport> findByTutorId(Long tutorId);
 
-    @Query("SELECT COUNT(r) FROM TutorReport r WHERE r.status = 'PENDING'")
-    Long getPendingReportsCount();
+    // List<TutorReport> findByStatus(ReportStatus status);
+
+//    @Query("SELECT COUNT(r) FROM TutorReport r WHERE r.tutor.id = :tutorId")
+//    Long getReportCountForTutor(@Param("tutorId") Long tutorId);
+//
+//    @Query("SELECT COUNT(r) FROM TutorReport r WHERE r.status = 'PENDING'")
+//    Long getPendingReportsCount();
 }

@@ -1,9 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.ConnectionRequest;
-import com.tutr.backend.dto.ConnectionResponse;
-import com.tutr.backend.dto.StudentBid;
-import com.tutr.backend.dto.TutorBid;
+import com.tutr.backend.dto.*;
 import com.tutr.backend.model.TutorStudentConnection;
 import com.tutr.backend.service.ConnectionService;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +45,10 @@ public class ConnectionController {
     @PostMapping("/{connectionId}/student-respond")
     public ResponseEntity<?> studentRespond(
             @PathVariable Long connectionId,
-            @RequestParam boolean accept) {
+            @RequestParam boolean accept,
+            @RequestParam(required = false) Double newOffer) {
         try {
-            TutorStudentConnection connection = connectionService.studentRespondToCounter(connectionId, accept);
+            TutorStudentConnection connection = connectionService.studentRespondToCounter(connectionId, accept, newOffer);
             ConnectionResponse response = connectionService.convertToResponse(connection);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -169,9 +167,7 @@ public class ConnectionController {
         }
     }
 
-    // ============ NEW STUDENT BID APIS ============
-
-
+    // ============  STUDENT BID APIS ============
 
     // KEEP THIS - Get bids for a specific course
     @GetMapping("/student/{studentId}/bids-with-details")
@@ -211,4 +207,17 @@ public class ConnectionController {
                     .body("Error fetching bid details: " + e.getMessage());
         }
     }
+
+    @GetMapping("/student/{studentId}/status/{connectionId}")
+    public ResponseEntity<?> getConnectionStatus(
+            @PathVariable Long studentId,
+            @PathVariable Long connectionId) {
+        try {
+            ConnectionResponse connection = connectionService.getConnectionStatus(studentId, connectionId);
+            return ResponseEntity.ok(connection);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
 }

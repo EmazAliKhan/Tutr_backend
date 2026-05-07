@@ -57,9 +57,11 @@ public class CourseController {
     }
 
     @GetMapping("/{courseId}/student")
-    public ResponseEntity<?> getCourseForStudent(@PathVariable Long courseId) {
+    public ResponseEntity<?> getCourseForStudent(
+            @PathVariable Long courseId,
+            @RequestParam(required = false) Long studentId) {
         try {
-            CourseDetail courseDetail = courseService.getStudentCourseDetail(courseId);
+            CourseDetail courseDetail = courseService.getStudentCourseDetail(courseId, studentId);
             return ResponseEntity.ok(courseDetail);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -117,7 +119,7 @@ public class CourseController {
             @RequestParam(required = false) CourseCategory category,
             @RequestParam(required = false) TeachingMode teachingMode,
             @RequestParam(required = false) PriceRange priceRange,
-            @RequestParam(required = false) Long studentId) {  // Add studentId for favorite status
+            @RequestParam(required = false) Long studentId) {
         try {
             List<StudentCourseCard> courses = courseService.searchAvailableCoursesForStudent(
                     subject, location, category, teachingMode, priceRange, studentId);

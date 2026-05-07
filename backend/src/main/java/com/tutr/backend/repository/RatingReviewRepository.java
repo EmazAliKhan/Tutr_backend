@@ -71,4 +71,13 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
             "ORDER BY avgRating DESC " +
             "LIMIT :limit", nativeQuery = true)
     List<Object[]> getTopRatedCoursesForTutor(@Param("tutorId") Long tutorId, @Param("limit") int limit);
+
+    // Get all tutors with their average rating (no ranking, no filtering)
+    @Query("SELECT t.id, t.firstName, t.lastName, t.profilePictureUrl, t.headline, t.location, " +
+            "COALESCE(AVG(r.rating), 0) as avgRating, COUNT(r) as ratingCount " +
+            "FROM TutorProfile t " +
+            "LEFT JOIN RatingReview r ON t.id = r.tutor.id " +
+            "WHERE t.user.accountStatus = 'ACTIVE' " +
+            "GROUP BY t.id")
+    List<Object[]> findAllTutorsWithRatings();
 }

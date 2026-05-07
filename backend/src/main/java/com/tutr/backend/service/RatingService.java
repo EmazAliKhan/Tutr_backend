@@ -25,6 +25,7 @@ public class RatingService {
     private final CourseRepository courseRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final BlockService blockService;
+    private final FavoriteService favoriteService;
 
     // ============ STUDENT RATING METHODS ============
 
@@ -299,6 +300,9 @@ public class RatingService {
         // Get blocked tutor IDs for this student
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
+        // ============ GET FAVORITE COURSE IDs ============
+        List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
+
         String studentLocation = student.getLocation();
         System.out.println("Finding recommendations for student in: " + studentLocation);
 
@@ -337,7 +341,9 @@ public class RatingService {
                     .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
                     .tutorName(tutorName)
                     .tutorId(tutor.getId())
+                    .location(course.getLocation())
                     .rank(rank++)
+                    .isFavorited(favoriteCourseIds.contains(course.getId()))
                     .build();
 
             recommendations.add(dto);
@@ -472,23 +478,66 @@ public class RatingService {
 
         return topTutors;
     }
+
+    public List<AllTutor> getAllTutorsForStudent(Long studentId) {
+        // Get student's blocked tutor IDs
+        List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
+
+        // Get all tutors with ratings
+        List<Object[]> results = ratingRepository.findAllTutorsWithRatings();
+
+        List<AllTutor> tutors = new ArrayList<>();
+
+        for (Object[] row : results) {
+            Long tutorId = ((Number) row[0]).longValue();
+
+            // Skip if tutor is blocked by this student
+            if (blockedTutorIds.contains(tutorId)) {
+                continue;
+            }
+
+            String firstName = (String) row[1];
+            String lastName = (String) row[2];
+            String profileImageUrl = (String) row[3];
+            String headline = (String) row[4];
+            String location = (String) row[5];
+            Double avgRating = ((Number) row[6]).doubleValue();
+            Long ratingCount = ((Number) row[7]).longValue();
+
+            AllTutor dto = AllTutor.builder()
+                    .tutorId(tutorId)
+                    .tutorName(firstName + " " + lastName)
+                    .tutorImage(profileImageUrl)
+                    .tutorHeadline(headline)
+                    .location(location)
+                    .averageRating(Math.round(avgRating * 10) / 10.0)
+                    .totalRatings(ratingCount.intValue())
+                    .build();
+
+            tutors.add(dto);
+        }
+
+        return tutors;
+    }
+
+
     // ============ COURSE REVIEWS METHODS ============
 
     // Original method that returns just reviews
-    public List<StudentReview> getCourseReviews(Long courseId) {
-        // Verify course exists
-        if (!courseRepository.existsById(courseId)) {
-            throw new RuntimeException("Course not found");
-        }
-
-        // Get all ratings for this course
-        List<RatingReview> ratings = ratingRepository.findByCourseId(courseId);
-
-        return ratings.stream()
-                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
-                .map(this::convertToStudentReviewWithTutor)
-                .collect(Collectors.toList());
-    }
+//    public List<StudentReview> getCourseReviews(Long courseId) {
+//        // Verify course exists
+//        if (!courseRepository.existsById(courseId)) {
+//            throw new RuntimeException("Course not found");
+//        }
+//
+//        // Get all ratings for this course
+//        List<RatingReview> ratings = ratingRepository.findByCourseId(courseId);
+//
+//        return ratings.stream()
+//                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+//                .map(this::convertToStudentReviewWithTutor)
+//                .collect(Collectors.toList());
+//    }
 
     // ============ NEW METHOD: Get course reviews with summary ============
 

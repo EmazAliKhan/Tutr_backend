@@ -15,5 +15,5 @@ public class LoginResponse {
     private AccountStatus accountStatus;
     private Integer registrationStep;
     private String message;
-    private String redirectUrl;   // Where frontend should go
+//    private String redirectUrl;
 }

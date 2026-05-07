@@ -1,9 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.ConnectionRequest;
-import com.tutr.backend.dto.ConnectionResponse;
-import com.tutr.backend.dto.StudentBid;
-import com.tutr.backend.dto.TutorBid;
+import com.tutr.backend.dto.*;
 import com.tutr.backend.model.*;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -61,6 +59,68 @@ public class ConnectionService {
 //        return connectionRepository.save(builder.build());
 //    }
 
+//    @Transactional
+//    public TutorStudentConnection requestConnection(ConnectionRequest request) {
+//        Course course = courseRepository.findById(request.getCourseId())
+//                .orElseThrow(() -> new RuntimeException("Course not found"));
+//
+//        StudentProfile student = studentRepository.findById(request.getStudentId())
+//                .orElseThrow(() -> new RuntimeException("Student not found"));
+//
+//        if (!course.getIsAvailable()) {
+//            throw new RuntimeException("Course is not available");
+//        }
+//
+//        // Check if connection already exists (including disconnected ones)
+//        Optional<TutorStudentConnection> existingConnection = connectionRepository
+//                .findByCourseIdAndStudentId(course.getId(), student.getId());
+//
+//        if (existingConnection.isPresent()) {
+//            TutorStudentConnection conn = existingConnection.get();
+//
+//            // If connection is DISCONNECTED or CANCELLED, create a NEW connection instead of reusing
+//            if (conn.getStatus() == ConnectionStatus.DISCONNECTED ||
+//                    conn.getStatus() == ConnectionStatus.CANCELLED) {
+//
+//                // Create a brand new connection instead of reactivating the old one
+//                TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
+//                        .course(course)
+//                        .student(student)
+//                        .tutor(course.getTutorProfile())
+//                        .originalPrice(course.getPrice())
+//                        .requestedAt(LocalDateTime.now());
+//
+//                if (request.getSuggestedPrice() != null) {
+//                    builder.studentCounterOffer(request.getSuggestedPrice())
+//                            .status(ConnectionStatus.NEGOTIATING);
+//                } else {
+//                    builder.status(ConnectionStatus.PENDING);
+//                }
+//
+//                return connectionRepository.save(builder.build());
+//            } else {
+//                throw new RuntimeException("Connection request already exists");
+//            }
+//        }
+//
+//        // Create new connection
+//        TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
+//                .course(course)
+//                .student(student)
+//                .tutor(course.getTutorProfile())
+//                .originalPrice(course.getPrice())
+//                .requestedAt(LocalDateTime.now());
+//
+//        if (request.getSuggestedPrice() != null) {
+//            builder.studentCounterOffer(request.getSuggestedPrice())
+//                    .status(ConnectionStatus.NEGOTIATING);
+//        } else {
+//            builder.status(ConnectionStatus.PENDING);
+//        }
+//
+//        return connectionRepository.save(builder.build());
+//    }
+
     @Transactional
     public TutorStudentConnection requestConnection(ConnectionRequest request) {
         Course course = courseRepository.findById(request.getCourseId())
@@ -73,39 +133,19 @@ public class ConnectionService {
             throw new RuntimeException("Course is not available");
         }
 
-        // Check if connection already exists (including disconnected ones)
-        Optional<TutorStudentConnection> existingConnection = connectionRepository
-                .findByCourseIdAndStudentId(course.getId(), student.getId());
+        //  Check if there's any PENDING or NEGOTIATING connection (active ones)
+        boolean hasActiveRequest = connectionRepository
+                .existsByCourseIdAndStudentIdAndStatusIn(
+                        course.getId(),
+                        student.getId(),
+                        Arrays.asList(ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING, ConnectionStatus.CONFIRMED)
+                );
 
-        if (existingConnection.isPresent()) {
-            TutorStudentConnection conn = existingConnection.get();
-
-            // If connection is DISCONNECTED or CANCELLED, create a NEW connection instead of reusing
-            if (conn.getStatus() == ConnectionStatus.DISCONNECTED ||
-                    conn.getStatus() == ConnectionStatus.CANCELLED) {
-
-                // Create a brand new connection instead of reactivating the old one
-                TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
-                        .course(course)
-                        .student(student)
-                        .tutor(course.getTutorProfile())
-                        .originalPrice(course.getPrice())
-                        .requestedAt(LocalDateTime.now());
-
-                if (request.getSuggestedPrice() != null) {
-                    builder.studentCounterOffer(request.getSuggestedPrice())
-                            .status(ConnectionStatus.NEGOTIATING);
-                } else {
-                    builder.status(ConnectionStatus.PENDING);
-                }
-
-                return connectionRepository.save(builder.build());
-            } else {
-                throw new RuntimeException("Connection request already exists");
-            }
+        if (hasActiveRequest) {
+            throw new RuntimeException("You already have an active request for this course");
         }
 
-        // Create new connection
+        //  Create new connection (ignore DISCONNECTED/CANCELLED ones)
         TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
                 .course(course)
                 .student(student)
@@ -123,6 +163,7 @@ public class ConnectionService {
         return connectionRepository.save(builder.build());
     }
 
+
     @Transactional
     public TutorStudentConnection tutorRespond(Long connectionId, boolean accept, Double counterOffer) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
@@ -137,26 +178,40 @@ public class ConnectionService {
 
         if (counterOffer != null) {
             // Tutor made a counter offer
+            Double previousTutorOffer = connection.getTutorCounterOffer();
+            Double lastStudentOffer = connection.getStudentCounterOffer();
+
+            if (previousTutorOffer != null && counterOffer >= previousTutorOffer) {
+                throw new RuntimeException("New counter offer must be less than your previous offer of " + previousTutorOffer);
+            }
+
+            if (lastStudentOffer != null && counterOffer <= lastStudentOffer) {
+                throw new RuntimeException("Counter offer must be greater than student's offer of " + lastStudentOffer);
+            }
+
             connection.setTutorCounterOffer(counterOffer);
             connection.setStatus(ConnectionStatus.NEGOTIATING);
+
         } else if (accept) {
-            // Tutor accepted - directly CONFIRMED
+            // Tutor accepted student's offer
             Double priceToAccept = connection.getStudentCounterOffer() != null ?
                     connection.getStudentCounterOffer() :
                     connection.getOriginalPrice();
             connection.setAgreedPrice(priceToAccept);
             connection.setStatus(ConnectionStatus.CONFIRMED);
             connection.setConfirmedAt(LocalDateTime.now());
+
         } else {
-            // Tutor rejected - DISCONNECTED
-            connection.setStatus(ConnectionStatus.DISCONNECTED);
+            // Tutor rejected -  Changed to REJECTED
+            connection.setStatus(ConnectionStatus.REJECTED);
+            connection.setIsActive(false);
         }
 
         return connectionRepository.save(connection);
     }
 
     @Transactional
-    public TutorStudentConnection studentRespondToCounter(Long connectionId, boolean accept) {
+    public TutorStudentConnection studentRespondToCounter(Long connectionId, boolean accept, Double newOffer) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
@@ -165,13 +220,37 @@ public class ConnectionService {
         }
 
         if (accept) {
-            // Student accepted tutor's counter offer - directly CONFIRMED
-            connection.setAgreedPrice(connection.getTutorCounterOffer());
+            // Student accepted tutor's offer
+            Double agreedPrice = connection.getTutorCounterOffer();
+
+            if (agreedPrice == null) {
+                agreedPrice = connection.getOriginalPrice();
+            }
+
+            connection.setAgreedPrice(agreedPrice);
             connection.setStatus(ConnectionStatus.CONFIRMED);
             connection.setConfirmedAt(LocalDateTime.now());
+
+        } else if (newOffer != null) {
+            // Student making a new counter offer
+            Double previousStudentOffer = connection.getStudentCounterOffer();
+            Double lastTutorOffer = connection.getTutorCounterOffer();
+
+            if (previousStudentOffer != null && newOffer <= previousStudentOffer) {
+                throw new RuntimeException("New offer must be greater than your previous offer of " + previousStudentOffer);
+            }
+
+            if (lastTutorOffer != null && newOffer >= lastTutorOffer) {
+                throw new RuntimeException("Your offer must be less than tutor's offer of " + lastTutorOffer);
+            }
+
+            connection.setStudentCounterOffer(newOffer);
+            connection.setStatus(ConnectionStatus.NEGOTIATING);
+
         } else {
-            // Student rejected - DISCONNECTED
-            connection.setStatus(ConnectionStatus.DISCONNECTED);
+            // Student rejected -  Changed to REJECTED
+            connection.setStatus(ConnectionStatus.REJECTED);
+            connection.setIsActive(false);
         }
 
         return connectionRepository.save(connection);
@@ -344,6 +423,10 @@ public class ConnectionService {
     public ConnectionResponse convertToResponse(TutorStudentConnection conn) {
         StudentProfile student = conn.getStudent();
         TutorProfile tutor = conn.getTutor();
+        Course course = conn.getCourse();
+
+        // Get average rating for this course
+        Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
         return ConnectionResponse.builder()
                 .connectionId(conn.getId())
@@ -354,6 +437,7 @@ public class ConnectionService {
                 .studentImage(student.getProfilePictureUrl())  // NOW student is defined
                 .tutorId(tutor.getId())
                 .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                .tutorImage(tutor.getProfilePictureUrl())
                 .tutorHeadline(tutor.getHeadline())
                 .status(conn.getStatus())
                 .originalPrice(conn.getOriginalPrice())
@@ -365,6 +449,10 @@ public class ConnectionService {
                 .lastUpdated(conn.getConfirmedAt() != null ? conn.getConfirmedAt() :
                         conn.getTutorRespondedAt() != null ? conn.getTutorRespondedAt() :
                                 conn.getRequestedAt())
+                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                .location(course.getLocation())
+                .teachingMode(course.getTeachingMode())
+                .category(course.getCategory())
                 .build();
     }
 
@@ -412,8 +500,14 @@ public class ConnectionService {
 
     public List<StudentBid> getStudentCourseBids(Long studentId, Long courseId) {
         // Get all negotiating connections (bids) for this student and specific course
+//        List<TutorStudentConnection> bids = connectionRepository
+//                .findByStudentIdAndCourseIdAndStatus(studentId, courseId, ConnectionStatus.NEGOTIATING);
         List<TutorStudentConnection> bids = connectionRepository
-                .findByStudentIdAndCourseIdAndStatus(studentId, courseId, ConnectionStatus.NEGOTIATING);
+                .findStudentCourseRequests(studentId, courseId);
+
+        if (bids.isEmpty()) {
+            return new ArrayList<>();
+        }
 
         return bids.stream()
                 .map(conn -> {
@@ -494,7 +588,20 @@ public class ConnectionService {
                 .build();
     }
 
-//Helper method
+    public ConnectionResponse getConnectionStatus(Long studentId, Long connectionId) {
+        // Find the connection
+        TutorStudentConnection connection = connectionRepository.findById(connectionId)
+                .orElseThrow(() -> new RuntimeException("Connection not found"));
+
+        // Verify this connection belongs to the student
+        if (!connection.getStudent().getId().equals(studentId)) {
+            throw new RuntimeException("Unauthorized: This connection does not belong to the student");
+        }
+
+        return convertToResponse(connection);
+    }
+
+    //Helper method
     private String formatTo12Hour(LocalTime time) {
         if (time == null) return "N/A";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a");

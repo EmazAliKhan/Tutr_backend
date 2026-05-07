@@ -12,6 +12,7 @@ public class StudentCourseCard {
     private String subject;
     private CourseCategory category;
     private TeachingMode teachingMode;
+    private String location;
     private Double price;
     private Double averageRating;
     private String tutorName;

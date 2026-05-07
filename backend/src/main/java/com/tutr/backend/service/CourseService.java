@@ -17,6 +17,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -213,16 +214,16 @@ public class CourseService {
         return convertToResponse(course);
     }
 
-    public CourseResponse getCourseByIdForStudent(Long courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
-
-        if (!course.getIsAvailable()) {
-            throw new RuntimeException("Course is not available");
-        }
-
-        return convertToResponse(course);
-    }
+//    public CourseResponse getCourseByIdForStudent(Long courseId) {
+//        Course course = courseRepository.findById(courseId)
+//                .orElseThrow(() -> new RuntimeException("Course not found"));
+//
+//        if (!course.getIsAvailable()) {
+//            throw new RuntimeException("Course is not available");
+//        }
+//
+//        return convertToResponse(course);
+//    }
 
     public List<CourseResponse> getCoursesByTutor(Long tutorProfileId) {
         return courseRepository.findByTutorProfileId(tutorProfileId)
@@ -236,12 +237,12 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-    public List<CourseResponse> getAvailableCoursesByTutor(Long tutorProfileId) {
-        return courseRepository.findByTutorProfileIdAndIsAvailableTrue(tutorProfileId)
-                .stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
+//    public List<CourseResponse> getAvailableCoursesByTutor(Long tutorProfileId) {
+//        return courseRepository.findByTutorProfileIdAndIsAvailableTrue(tutorProfileId)
+//                .stream()
+//                .map(this::convertToResponse)
+//                .collect(Collectors.toList());
+//    }
 
     public List<CourseResponse> getAllAvailableCourses() {
         return courseRepository.findByIsAvailableTrue()
@@ -344,6 +345,7 @@ public class CourseService {
                     .subject(course.getSubject())
                     .category(course.getCategory())
                     .teachingMode(course.getTeachingMode())
+                    .location(course.getLocation())
                     .price(course.getPrice())
                     .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
                     .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
@@ -543,6 +545,7 @@ public class CourseService {
                 .totalStudents(studentCount)
                 .pendingRequests(pendingCount)
                 .tutorName(tutorName)
+                .tutorId(tutor.getId())
                 .tutorImage(tutor.getProfilePictureUrl())
                 .tutorHeadline(tutor.getHeadline())
                 .createdAt(course.getCreatedAt())
@@ -550,7 +553,7 @@ public class CourseService {
                 .build();
     }
 
-    public CourseDetail getStudentCourseDetail(Long courseId) {
+    public CourseDetail getStudentCourseDetail(Long courseId, Long studentId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
@@ -565,6 +568,27 @@ public class CourseService {
         int ratingCount = ratingRepository.getRatingCountForCourse(courseId);
         int studentCount = connectionRepository.findByCourseIdAndStatus(
                 courseId, ConnectionStatus.CONFIRMED).size();
+
+
+        Long connectionId = null;
+        ConnectionStatus connectionStatus = null;
+        Boolean isBlocked = false;
+
+        if (studentId != null) {
+            // Get all connections for this student and course, ordered by requestedAt descending
+            List<TutorStudentConnection> connections = connectionRepository
+                    .findByStudentIdAndCourseIdOrderByRequestedAtDesc(studentId, courseId);
+
+            if (!connections.isEmpty()) {
+                // Take the most recent connection
+                TutorStudentConnection latestConnection = connections.get(0);
+                connectionId = latestConnection.getId();
+                connectionStatus = latestConnection.getStatus();
+            }
+
+            // ============ CHECK IF TUTOR IS BLOCKED ============
+            isBlocked = blockService.isTutorBlocked(studentId, tutor.getId());
+        }
 
         return CourseDetail.builder()
                 .courseId(course.getId())
@@ -586,10 +610,14 @@ public class CourseService {
                 .totalRatings(ratingCount)
                 .totalStudents(studentCount)
                 .tutorName(tutorName)
+                .tutorId(tutor.getId())
                 .tutorImage(tutor.getProfilePictureUrl())
                 .tutorHeadline(tutor.getHeadline())
                 .createdAt(course.getCreatedAt())
                 .updatedAt(course.getUpdatedAt())
+                .connectionId(connectionId)
+                .connectionStatus(connectionStatus)
+                .isBlocked(isBlocked)
                 .build();
     }
 
@@ -609,6 +637,7 @@ public class CourseService {
                             .subject(course.getSubject())
                             .category(course.getCategory())
                             .teachingMode(course.getTeachingMode())
+                            .location(course.getLocation())
                             .price(course.getPrice())
                             .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
                             .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
