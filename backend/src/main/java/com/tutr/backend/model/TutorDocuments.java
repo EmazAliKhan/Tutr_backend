@@ -22,7 +22,6 @@ public class TutorDocuments {
 
     private String cnicImageUrl;
     private String certificateImageUrl;
-    private String profilePictureUrl;
 
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus = VerificationStatus.APPROVED;
