@@ -20,12 +20,18 @@ public class StudentProfileService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final FileStorageService fileStorageService;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public StudentProfile createStudentProfile(StudentProfileRequest request) {
         // Get user
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ADD THESE 3 LINES - Email verification check
+        if (!emailVerificationService.isEmailVerified(user.getEmail())) {
+            throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
+        }
 
         // VALIDATE STUDENT AGE - Must be at least 16
         AgeValidator.validateStudentAge(request.getDateOfBirth());

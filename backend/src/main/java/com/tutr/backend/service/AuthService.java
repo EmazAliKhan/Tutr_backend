@@ -21,6 +21,7 @@ public class AuthService {
     private final StudentProfileRepository studentProfileRepository;
     private final TutorDocumentsRepository documentsRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     public LoginResponse login(LoginRequest request) {
         // Find user by email
@@ -30,6 +31,11 @@ public class AuthService {
         // Check password
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid email or password");
+        }
+
+        // ========== CHECK EMAIL VERIFICATION FIRST ==========
+        if (!user.isEmailVerified()) {
+            throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
 
         // Validate based on role
@@ -46,6 +52,7 @@ public class AuthService {
                 .role(user.getRole())
                 .accountStatus(user.getAccountStatus())
                 .registrationStep(user.getRegistrationStep())
+                .emailVerified(user.isEmailVerified())
                 .message("Login successful");
 
         // Get profile ID based on role
@@ -57,9 +64,6 @@ public class AuthService {
                     .ifPresent(profile -> builder.profileId(profile.getId()));
         }
 
-        // Set redirect URL
-//        builder.redirectUrl(getRedirectUrl(user));
-
         return builder.build();
     }
 
@@ -68,9 +72,6 @@ public class AuthService {
         switch (user.getRegistrationStep()) {
             case 1:
                 throw new RuntimeException("Please complete your student profile first");
-//            case 2:
-//                // Step 2 - Profile completed, can login
-//                break;
             default:
                 // Any other step, allow login
                 break;

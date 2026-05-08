@@ -6,11 +6,19 @@ import com.tutr.backend.model.*;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.util.AgeValidator;
-import com.tutr.backend.util.EmailValidator;
+//import com.tutr.backend.util.EmailValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.transaction.annotation.Transactional;
 import com.tutr.backend.dto.TutorProfileResponse;
 import com.tutr.backend.dto.EditTutorProfileRequest;
@@ -25,6 +33,9 @@ public class UserService {
     private final FileStorageService fileStorageService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    // Email verification service
+    private final EmailVerificationService emailVerificationService;
+    private final Map<String, User> temporaryUserCache = new ConcurrentHashMap<>();
 
     // Get tutor profile for editing
     public TutorProfileResponse getTutorProfile(Long profileId) {
@@ -115,31 +126,35 @@ public class UserService {
         return tutorProfileRepository.save(profile);
     }
 
-
-
     // Step 2: create user with role-based account status
     public User registerUser(RoleSignupRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        // Normalize email FIRST
+        String normalizedEmail = request.getEmail().toLowerCase().trim();
+
+        // Check if email already exists in database
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        // Validate email domain
-        EmailValidator.validate(request.getEmail());
-        // Convert role string to enum
         Role role = Role.valueOf(request.getRole().toUpperCase());
 
-        // Set account status based on role
         AccountStatus status = (role == Role.STUDENT) ? AccountStatus.ACTIVE : AccountStatus.PENDING;
 
         User user = User.builder()
-                .email(request.getEmail())
+                .email(normalizedEmail)  // Use normalized email
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(role)
-                .accountStatus(status)  // STUDENT = ACTIVE, TUTOR = PENDING
-                .registrationStep(1)
+                .accountStatus(status)
+                .registrationStep(0)
+                .emailVerified(false)
                 .build();
 
-        return userRepository.save(user);
+        // Store in temporary cache with normalized email
+        temporaryUserCache.put(normalizedEmail, user);
+
+        // Send OTP using normalized email
+        emailVerificationService.sendOtp(normalizedEmail);
+        return user;
     }
 
     // Step 3: complete profile
@@ -147,6 +162,11 @@ public class UserService {
     public TutorProfile completeTutorProfile(TutorProfileRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ADD THESE 3 LINES - Email verification check
+        if (!emailVerificationService.isEmailVerified(user.getEmail())) {
+            throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
+        }
 
         // In completeTutorProfile method:
         if (user.getRole() == Role.TUTOR) {
@@ -198,4 +218,48 @@ public class UserService {
         userRepository.save(user);
     }
 
+    // Check if email is verified before profile creation
+    public boolean isEmailVerified(String email) {
+        return emailVerificationService.isEmailVerified(email);
+    }
+
+    // NEW METHOD: Verify OTP and save user to database
+    @Transactional
+    public User verifyAndSaveUser(String email, String otpCode) {
+        String normalizedEmail = email.toLowerCase().trim();
+
+        User tempUser = temporaryUserCache.get(normalizedEmail);
+
+        if (tempUser == null) {
+            throw new RuntimeException("No pending registration. Please sign up again.");
+        }
+
+        try {
+            // Verify OTP using existing service
+            boolean isVerified = emailVerificationService.verifyOtp(normalizedEmail, otpCode);
+
+            if (!isVerified) {
+                throw new RuntimeException("Invalid OTP code");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("OTP verification failed: " + e.getMessage());
+        }
+
+        // Prepare for database save
+        tempUser.setRegistrationStep(1);
+        tempUser.setEmailVerified(true);
+
+        if (tempUser.getRole() == Role.STUDENT) {
+            tempUser.setAccountStatus(AccountStatus.ACTIVE);
+        } else {
+            tempUser.setAccountStatus(AccountStatus.PENDING);
+        }
+
+        User savedUser = userRepository.save(tempUser);
+        temporaryUserCache.remove(normalizedEmail);
+
+        return savedUser;
+    }
+
 }
+

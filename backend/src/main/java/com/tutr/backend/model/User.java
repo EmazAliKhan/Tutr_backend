@@ -23,6 +23,9 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @Enumerated(EnumType.STRING)
     private Role role; // TUTOR / STUDENT
 
@@ -30,7 +33,7 @@ public class User {
     private AccountStatus accountStatus = AccountStatus.PENDING;
 
     private Integer registrationStep = 1;
-//    private Boolean isEmailVerified = false;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

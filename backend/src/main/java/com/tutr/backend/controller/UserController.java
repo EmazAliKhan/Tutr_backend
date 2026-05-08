@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/register")
@@ -235,4 +236,40 @@ public class UserController {
                     .body("Error: " + e.getMessage());
         }
     }
+
+// Add to UserController.java
+
+    // Temporary registration (NO database save)
+    @PostMapping("/register-temp")
+    public ResponseEntity<?> registerTempUser(@RequestBody RoleSignupRequest request) {
+        try {
+            User tempUser = userService.registerUser(request);
+            return ResponseEntity.ok(Map.of(
+                    "tempEmail", tempUser.getEmail(),
+                    "role", tempUser.getRole().toString(),
+                    "message", "OTP sent to your email. Please verify to complete registration."
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Verify OTP and save user to database
+    @PostMapping("/verify-and-save")
+    public ResponseEntity<?> verifyAndSaveUser(@RequestBody OtpVerifyRequest request) {
+        try {
+            User user = userService.verifyAndSaveUser(request.getEmail(), request.getOtpCode());
+            return ResponseEntity.ok(Map.of(
+                    "id", user.getId(),
+                    "email", user.getEmail(),
+                    "role", user.getRole().toString(),
+                    "message", "Email verified successfully. Please complete your profile."
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }
