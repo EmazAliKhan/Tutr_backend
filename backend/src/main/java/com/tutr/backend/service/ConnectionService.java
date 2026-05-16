@@ -285,11 +285,19 @@ public class ConnectionService {
     }
 
     public List<TutorBid> getTutorCourseBids(Long tutorId, Long courseId) {
-        // Get all negotiating connections (bids) for this tutor and specific course
-        List<TutorStudentConnection> bids = connectionRepository
+        // Get PENDING connections
+        List<TutorStudentConnection> pendingBids = connectionRepository
+                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.PENDING);
+
+        // Get NEGOTIATING connections
+        List<TutorStudentConnection> negotiatingBids = connectionRepository
                 .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.NEGOTIATING);
 
-        return bids.stream()
+        List<TutorStudentConnection> allBids = new ArrayList<>();
+        allBids.addAll(pendingBids);
+        allBids.addAll(negotiatingBids);
+
+        return allBids.stream()
                 .map(conn -> {
                     StudentProfile student = conn.getStudent();
                     Course course = conn.getCourse();
