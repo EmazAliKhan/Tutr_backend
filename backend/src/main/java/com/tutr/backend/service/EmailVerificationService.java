@@ -39,7 +39,7 @@ public class EmailVerificationService {
     @Transactional
     public void sendOtp(String email) {
         String otp = generateOtp();
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(10);
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(3);
         LocalDateTime now = LocalDateTime.now();
 
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
@@ -82,7 +82,7 @@ public class EmailVerificationService {
             
             Your verification code is: %s
             
-            This code will expire in 10 minutes.
+            This code will expire in 3 minutes.
             
             Enter this code to complete your registration and start your learning journey.
             
@@ -104,7 +104,7 @@ public class EmailVerificationService {
     @Transactional
     public void sendForgotPasswordOtp(String email) {
         String otp = generateOtp();
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(10);
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(3);
         LocalDateTime now = LocalDateTime.now();
 
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
@@ -147,7 +147,7 @@ public class EmailVerificationService {
             
             Your password reset code is: %s
             
-            This code will expire in 10 minutes.
+            This code will expire in 3 minutes.
             
             If you did not request a password reset, please ignore this email. Your password will remain unchanged.
             
@@ -191,17 +191,16 @@ public class EmailVerificationService {
         verification.setVerified(true);
         verificationRepository.save(verification);
 
-        // FIX: Don't require user to exist in database
         // Update User entity ONLY if it exists (for temporary flow, user may not be in DB yet)
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setEmailVerified(true);
             userRepository.save(user);
-            System.out.println("✅ User emailVerified set to true for: " + email);
+            System.out.println("User emailVerified set to true for: " + email);
         } else {
             // User not in DB yet (temporary user during signup) - this is fine
-            System.out.println("✅ OTP verified for temporary user (not yet in database): " + email);
+            System.out.println("OTP verified for temporary user (not yet in database): " + email);
         }
 
         System.out.println("OTP verified successfully for email: " + email);
@@ -254,14 +253,14 @@ public class EmailVerificationService {
         System.out.println("Password reset successfully for email: " + email);
     }
 
-    // Reset OTP expiry (extend by 10 more minutes)
+    // Reset OTP expiry (extend by 3 more minutes)
     @Transactional
     public void extendOtpExpiry(String email) {
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
 
         if (existing.isPresent()) {
             EmailVerification verification = existing.get();
-            verification.setExpiryTime(LocalDateTime.now().plusMinutes(10));
+            verification.setExpiryTime(LocalDateTime.now().plusMinutes(3));
             verificationRepository.save(verification);
             System.out.println("OTP expiry extended for email: " + email);
         } else {

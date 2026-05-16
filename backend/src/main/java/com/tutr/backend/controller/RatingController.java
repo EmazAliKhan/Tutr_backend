@@ -61,14 +61,4 @@ public class RatingController {
         }
     }
 
-//    @GetMapping("/review/{reviewId}")
-//    public ResponseEntity<?> getTutorReviewDetail(@PathVariable Long reviewId) {
-//        try {
-//            TutorReviewDetail reviewDetail = ratingService.getTutorReviewDetail(reviewId);
-//            return ResponseEntity.ok(reviewDetail);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-//        }
-//    }
-
 }

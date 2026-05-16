@@ -14,7 +14,7 @@ public interface StudentFavoriteRepository extends JpaRepository<StudentFavorite
     // Find all favorites for a student
     List<StudentFavorite> findByStudentId(Long studentId);
 
-    // Find all favorites for a student ordered by date (newest first) - ADD THIS
+    // Find all favorites for a student ordered by date (newest first)
     List<StudentFavorite> findByStudentIdOrderByFavoritedAtDesc(Long studentId);
 
     // Find specific favorite by student and course
@@ -26,7 +26,4 @@ public interface StudentFavoriteRepository extends JpaRepository<StudentFavorite
     // Delete a favorite by student and course
     void deleteByStudentIdAndCourseId(Long studentId, Long courseId);
 
-
-    // @Query("SELECT f.course, AVG(r.rating) as avgRating ...")
-    // List<Object[]> findFavoriteCoursesWithRatings(@Param("studentId") Long studentId);
 }

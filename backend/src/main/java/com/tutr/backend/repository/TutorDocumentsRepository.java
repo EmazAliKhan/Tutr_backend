@@ -11,6 +11,5 @@ import java.util.Optional;
 public interface TutorDocumentsRepository extends JpaRepository<TutorDocuments, Long> {
     Optional<TutorDocuments> findByUser(User user);
     Optional<TutorDocuments> findByUserId(Long userId);
-    //List<TutorDocuments> findByVerificationStatus(VerificationStatus status);
 
 }

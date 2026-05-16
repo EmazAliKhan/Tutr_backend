@@ -15,27 +15,13 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     // Find all connections for a tutor
     List<TutorStudentConnection> findByTutorId(Long tutorId);
 
-    // Find active connections for a student
-    //List<TutorStudentConnection> findByStudentIdAndIsActiveTrue(Long studentId);
-
     // Find connections by status for a tutor
     List<TutorStudentConnection> findByTutorIdAndStatus(Long tutorId, ConnectionStatus status);
 
     // Find connections by status for a student
     List<TutorStudentConnection> findByStudentIdAndStatus(Long studentId, ConnectionStatus status);
 
-    // Check if a connection already exists for this course and student
-    Optional<TutorStudentConnection> findByCourseIdAndStudentId(Long courseId, Long studentId);
-
     boolean existsByCourseIdAndStatusIn(Long courseId, List<ConnectionStatus> statuses);
-
-    // Get all pending requests for a tutor
-//    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.status = 'PENDING'")
-//    List<TutorStudentConnection> findPendingRequestsForTutor(@Param("tutorId") Long tutorId);
-
-    // Get all ongoing negotiations
-//    @Query("SELECT c FROM TutorStudentConnection c WHERE c.status = 'NEGOTIATING'")
-//    List<TutorStudentConnection> findNegotiations();
 
     // Find by course ID and status
     @Query("SELECT c FROM TutorStudentConnection c WHERE c.course.id = :courseId AND c.status = :status")
@@ -74,11 +60,4 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     List<TutorStudentConnection> findStudentCourseRequests(
             @Param("studentId") Long studentId,
             @Param("courseId") Long courseId);
-
-//    @Query("SELECT c FROM TutorStudentConnection c " +
-//            "JOIN FETCH c.student s " +
-//            "JOIN FETCH c.course co " +
-//            "WHERE c.tutor.id = :tutorId AND c.status = :status " +
-//            "ORDER BY c.confirmedAt DESC")
-//    List<TutorStudentConnection> findTutorStudentsWithDetails(@Param("tutorId") Long tutorId, @Param("status") ConnectionStatus status);
 }

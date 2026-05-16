@@ -12,11 +12,10 @@ import java.util.Optional;
 public interface RatingReviewRepository extends JpaRepository<RatingReview, Long> {
 
     boolean existsByConnectionId(Long connectionId);
-    Optional<RatingReview> findByConnectionId(Long connectionId);
+  //  Optional<RatingReview> findByConnectionId(Long connectionId);
     List<RatingReview> findByTutorId(Long tutorId);
     List<RatingReview> findByCourseId(Long courseId);
 
-    // ============ ADD THIS MISSING METHOD ============
     boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
 
     @Query("SELECT r FROM RatingReview r WHERE r.tutor.id = :tutorId AND r.course.category = :category")

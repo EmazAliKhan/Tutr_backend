@@ -6,16 +6,10 @@ import com.tutr.backend.model.*;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.util.AgeValidator;
-//import com.tutr.backend.util.EmailValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -219,11 +213,11 @@ public class UserService {
     }
 
     // Check if email is verified before profile creation
-    public boolean isEmailVerified(String email) {
-        return emailVerificationService.isEmailVerified(email);
-    }
+//    public boolean isEmailVerified(String email) {
+//        return emailVerificationService.isEmailVerified(email);
+//    }
 
-    // NEW METHOD: Verify OTP and save user to database
+    //  Verify OTP and save user to database
     @Transactional
     public User verifyAndSaveUser(String email, String otpCode) {
         String normalizedEmail = email.toLowerCase().trim();

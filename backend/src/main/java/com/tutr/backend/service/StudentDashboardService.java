@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 public class StudentDashboardService {
 
     private final StudentProfileRepository studentRepository;
-    private final RatingService ratingService;  // Already has getTopTutors()
-    private final BlockService blockService;    // Already has getBlockedTutorIds()
+    private final RatingService ratingService;
+    private final BlockService blockService;
 
     public StudentDashboard getStudentDashboard(Long studentId) {
         StudentProfile student = studentRepository.findById(studentId)
@@ -26,7 +26,7 @@ public class StudentDashboardService {
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
         // Get top tutors (filter out blocked ones)
-        List<TopTutor> allTopTutors = ratingService.getTopTutors(4);
+        List<TopTutor> allTopTutors = ratingService.getTopTutors(5);
         List<TopTutor> filteredTopTutors = allTopTutors.stream()
                 .filter(tutor -> !blockedTutorIds.contains(tutor.getTutorId()))
                 .limit(5)
@@ -34,7 +34,7 @@ public class StudentDashboardService {
 
         // Get recommended courses (already filtered in the method)
         List<RecommendedCourse> recommendedCourses = ratingService
-                .getRecommendedCoursesForStudent(studentId, 5);
+                .getRecommendedCoursesForStudent(studentId, 5);// limit 5
 
         return StudentDashboard.builder()
                 .studentId(studentId)

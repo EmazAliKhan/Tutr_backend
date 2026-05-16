@@ -56,8 +56,8 @@ public class AgeValidator {
         return age >= minimumAge && age <= MAXIMUM_AGE && !dateOfBirth.isAfter(LocalDate.now());
     }
 
-    public static int calculateAge(LocalDate dateOfBirth) {
-        if (dateOfBirth == null) return 0;
-        return Period.between(dateOfBirth, LocalDate.now()).getYears();
-    }
+//    public static int calculateAge(LocalDate dateOfBirth) {
+//        if (dateOfBirth == null) return 0;
+//        return Period.between(dateOfBirth, LocalDate.now()).getYears();
+//    }
 }

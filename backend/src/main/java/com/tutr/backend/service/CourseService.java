@@ -100,8 +100,28 @@ public class CourseService {
         int start = from.ordinal();
         int end = to.ordinal();
 
-        for (int i = start; i <= end; i++) {
-            days.add(allDays[i].toString());
+        // Same day = 1 day (only that day)
+        if (start == end) {
+            days.add(allDays[start].toString());
+            return days;
+        }
+
+        // Normal range (from day comes before to day)
+        if (start < end) {
+            for (int i = start; i <= end; i++) {
+                days.add(allDays[i].toString());
+            }
+        } else {
+            // Wraparound: from day after to day (crossing weekend)
+            // Example: Friday (4) to Monday (0)
+            // Add from Friday to Sunday
+            for (int i = start; i < allDays.length; i++) {
+                days.add(allDays[i].toString());
+            }
+            // Add from Monday to end day
+            for (int i = 0; i <= end; i++) {
+                days.add(allDays[i].toString());
+            }
         }
 
         return days;
@@ -111,9 +131,9 @@ public class CourseService {
 
     @Transactional
     public Course createCourse(CourseRequest request) {
-        // Validate day range
-        if (request.getFromDay().ordinal() > request.getToDay().ordinal()) {
-            throw new RuntimeException("From day must come before to day");
+        // Just ensure days are not null
+        if (request.getFromDay() == null || request.getToDay() == null) {
+            throw new RuntimeException("From day and To day are required");
         }
 
         // Parse and validate times from 12-hour format
@@ -213,17 +233,6 @@ public class CourseService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         return convertToResponse(course);
     }
-
-//    public CourseResponse getCourseByIdForStudent(Long courseId) {
-//        Course course = courseRepository.findById(courseId)
-//                .orElseThrow(() -> new RuntimeException("Course not found"));
-//
-//        if (!course.getIsAvailable()) {
-//            throw new RuntimeException("Course is not available");
-//        }
-//
-//        return convertToResponse(course);
-//    }
 
     public List<CourseResponse> getCoursesByTutor(Long tutorProfileId) {
         return courseRepository.findByTutorProfileId(tutorProfileId)

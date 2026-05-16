@@ -57,25 +57,4 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "HAVING AVG(r.rating) >= 4.0 OR COUNT(r) = 0 " +
             "ORDER BY avgRating DESC, c.createdAt DESC")
     List<Object[]> findTopRatedCourses();
-
-
-    //    // Find by category
-//    List<Course> findByCategory(CourseCategory category);
-//
-//    // Find by subject (case insensitive)
-//    List<Course> findBySubjectContainingIgnoreCase(String subject);
-//
-//    // Find by location (case insensitive)
-//    List<Course> findByLocationContainingIgnoreCase(String location);
-
-
-
-    // Find available courses by location (for recommendations)
-//    @Query("SELECT c FROM Course c WHERE c.isAvailable = true AND LOWER(c.location) LIKE LOWER(CONCAT('%', :location, '%'))")
-//    List<Course> findAvailableByLocation(@Param("location") String location);
-
-
-    // Find by tutor profile object
-    //  List<Course> findByTutorProfile(TutorProfile tutorProfile);
-
 }

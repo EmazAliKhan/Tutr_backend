@@ -28,7 +28,7 @@ public class StudentProfileService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ADD THESE 3 LINES - Email verification check
+        //  Email verification check
         if (!emailVerificationService.isEmailVerified(user.getEmail())) {
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
@@ -64,7 +64,7 @@ public class StudentProfileService {
     }
 
 
-    // GET student profile for editing (NEW)
+    // GET student profile for editing
     public StudentProfileResponse getStudentProfile(Long profileId) {
         StudentProfile profile = studentProfileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Student profile not found"));
@@ -87,7 +87,7 @@ public class StudentProfileService {
                 .build();
     }
 
-    // EDIT student profile (NEW)
+    // EDIT student profile
     @Transactional
     public StudentProfile editStudentProfile(EditStudentProfileRequest request) {
         // Find the student profile

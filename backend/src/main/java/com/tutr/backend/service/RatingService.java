@@ -520,26 +520,7 @@ public class RatingService {
         return tutors;
     }
 
-
-    // ============ COURSE REVIEWS METHODS ============
-
-    // Original method that returns just reviews
-//    public List<StudentReview> getCourseReviews(Long courseId) {
-//        // Verify course exists
-//        if (!courseRepository.existsById(courseId)) {
-//            throw new RuntimeException("Course not found");
-//        }
-//
-//        // Get all ratings for this course
-//        List<RatingReview> ratings = ratingRepository.findByCourseId(courseId);
-//
-//        return ratings.stream()
-//                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
-//                .map(this::convertToStudentReviewWithTutor)
-//                .collect(Collectors.toList());
-//    }
-
-    // ============ NEW METHOD: Get course reviews with summary ============
+    // ============ Get course reviews with summary ============
 
     public CourseReviewsResponse getCourseReviewsWithSummary(Long courseId) {
         // Verify course exists
