@@ -40,7 +40,7 @@ public class TutorDashboardService {
 
         int totalActiveStudents = confirmedConnections.size();
 
-        // 5. Get top 5 courses based on student count (ONLY available courses)
+        // 5. Get top 5 courses based on average rating (ONLY available courses)
         List<TopCourse> topCourses = getTopCoursesForTutor(tutorId, 5);
 
         // 6. Build and return dashboard
@@ -86,9 +86,9 @@ public class TutorDashboardService {
             topCourses.add(dto);
         }
 
-        // Sort by student count (highest first)
+        //  Sort by average rating (highest first)
         List<TopCourse> sortedCourses = topCourses.stream()
-                .sorted((c1, c2) -> c2.getTotalStudents().compareTo(c1.getTotalStudents()))
+                .sorted((c1, c2) -> c2.getAverageRating().compareTo(c1.getAverageRating()))
                 .limit(limit)
                 .collect(Collectors.toList());
 

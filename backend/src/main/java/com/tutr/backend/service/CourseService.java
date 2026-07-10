@@ -2,10 +2,7 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.dto.*;
 import com.tutr.backend.model.*;
-import com.tutr.backend.repository.CourseRepository;
-import com.tutr.backend.repository.TutorProfileRepository;
-import com.tutr.backend.repository.TutorStudentConnectionRepository;
-import com.tutr.backend.repository.RatingReviewRepository;
+import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +24,8 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final TutorProfileRepository tutorProfileRepository;
     private final TutorStudentConnectionRepository connectionRepository;
+    private final RatingReviewRepository ratingReviewRepository;
+    private final StudentFavoriteRepository favoriteRepository;
     private final RatingReviewRepository ratingRepository;
     private final FavoriteService favoriteService;
     private final BlockService blockService;
@@ -282,6 +281,19 @@ public class CourseService {
         if (hasActiveConnections) {
             throw new RuntimeException("Cannot delete course: Students are connected to this course");
         }
+
+        // Delete finished connections
+
+        favoriteRepository.deleteByCourseId(courseId);
+        ratingReviewRepository.deleteByCourseId(courseId);
+        connectionRepository.deleteByCourseIdAndStatusIn(
+                courseId,
+                List.of(
+                        ConnectionStatus.DISCONNECTED,
+                        ConnectionStatus.REJECTED,
+                        ConnectionStatus.CANCELLED
+                )
+        );
 
         courseRepository.delete(course);
     }
@@ -562,13 +574,77 @@ public class CourseService {
                 .build();
     }
 
+//    public CourseDetail getStudentCourseDetail(Long courseId, Long studentId) {
+//        Course course = courseRepository.findById(courseId)
+//                .orElseThrow(() -> new RuntimeException("Course not found"));
+//
+//        if (!course.getIsAvailable()) {
+//            throw new RuntimeException("Course is not available");
+//        }
+//
+//        TutorProfile tutor = course.getTutorProfile();
+//        String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
+//
+//        Double avgRating = ratingRepository.getAverageRatingForCourse(courseId);
+//        int ratingCount = ratingRepository.getRatingCountForCourse(courseId);
+//        int studentCount = connectionRepository.findByCourseIdAndStatus(
+//                courseId, ConnectionStatus.CONFIRMED).size();
+//
+//
+//        Long connectionId = null;
+//        ConnectionStatus connectionStatus = null;
+//        Boolean isBlocked = false;
+//
+//        if (studentId != null) {
+//            // Get all connections for this student and course, ordered by requestedAt descending
+//            List<TutorStudentConnection> connections = connectionRepository
+//                    .findByStudentIdAndCourseIdOrderByRequestedAtDesc(studentId, courseId);
+//
+//            if (!connections.isEmpty()) {
+//                // Take the most recent connection
+//                TutorStudentConnection latestConnection = connections.get(0);
+//                connectionId = latestConnection.getId();
+//                connectionStatus = latestConnection.getStatus();
+//            }
+//
+//            // ============ CHECK IF TUTOR IS BLOCKED ============
+//            isBlocked = blockService.isTutorBlocked(studentId, tutor.getId());
+//        }
+//
+//        return CourseDetail.builder()
+//                .courseId(course.getId())
+//                .subject(course.getSubject())
+//                .about(course.getAbout())
+//                .category(course.getCategory())
+//                .teachingMode(course.getTeachingMode())
+//                .location(course.getLocation())
+//                .startTime(formatTo12Hour(course.getStartTime()))
+//                .endTime(formatTo12Hour(course.getEndTime()))
+//                .totalHours(calculateTotalHours(course.getStartTime(), course.getEndTime()))
+//                .fromDay(course.getFromDay())
+//                .toDay(course.getToDay())
+//                .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
+//                .classesPerMonth(course.getClassesPerMonth())
+//                .price(course.getPrice())
+//                .isAvailable(course.getIsAvailable())
+//                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+//                .totalRatings(ratingCount)
+//                .totalStudents(studentCount)
+//                .tutorName(tutorName)
+//                .tutorId(tutor.getId())
+//                .tutorImage(tutor.getProfilePictureUrl())
+//                .tutorHeadline(tutor.getHeadline())
+//                .createdAt(course.getCreatedAt())
+//                .updatedAt(course.getUpdatedAt())
+//                .connectionId(connectionId)
+//                .connectionStatus(connectionStatus)
+//                .isBlocked(isBlocked)
+//                .build();
+//    }
+
     public CourseDetail getStudentCourseDetail(Long courseId, Long studentId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
-
-        if (!course.getIsAvailable()) {
-            throw new RuntimeException("Course is not available");
-        }
 
         TutorProfile tutor = course.getTutorProfile();
         String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
@@ -578,26 +654,25 @@ public class CourseService {
         int studentCount = connectionRepository.findByCourseIdAndStatus(
                 courseId, ConnectionStatus.CONFIRMED).size();
 
-
         Long connectionId = null;
         ConnectionStatus connectionStatus = null;
         Boolean isBlocked = false;
 
         if (studentId != null) {
-            // Get all connections for this student and course, ordered by requestedAt descending
             List<TutorStudentConnection> connections = connectionRepository
                     .findByStudentIdAndCourseIdOrderByRequestedAtDesc(studentId, courseId);
 
             if (!connections.isEmpty()) {
-                // Take the most recent connection
                 TutorStudentConnection latestConnection = connections.get(0);
                 connectionId = latestConnection.getId();
                 connectionStatus = latestConnection.getStatus();
             }
 
-            // ============ CHECK IF TUTOR IS BLOCKED ============
             isBlocked = blockService.isTutorBlocked(studentId, tutor.getId());
         }
+
+        // ✅ REMOVED: No longer throwing error for unavailable courses
+        // Everyone can view course details
 
         return CourseDetail.builder()
                 .courseId(course.getId())

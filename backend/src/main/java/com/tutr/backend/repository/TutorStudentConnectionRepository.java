@@ -23,6 +23,8 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
 
     boolean existsByCourseIdAndStatusIn(Long courseId, List<ConnectionStatus> statuses);
 
+    void deleteByCourseIdAndStatusIn(Long courseId, List<ConnectionStatus> statuses);
+
     // Find by course ID and status
     @Query("SELECT c FROM TutorStudentConnection c WHERE c.course.id = :courseId AND c.status = :status")
     List<TutorStudentConnection> findByCourseIdAndStatus(@Param("courseId") Long courseId, @Param("status") ConnectionStatus status);

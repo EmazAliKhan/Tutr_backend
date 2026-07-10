@@ -79,4 +79,6 @@ public interface RatingReviewRepository extends JpaRepository<RatingReview, Long
             "WHERE t.user.accountStatus = 'ACTIVE' " +
             "GROUP BY t.id")
     List<Object[]> findAllTutorsWithRatings();
+
+    void deleteByCourseId(Long courseId);
 }

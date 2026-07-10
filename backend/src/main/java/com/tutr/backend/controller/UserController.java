@@ -103,7 +103,7 @@ public class UserController {
                     }
                 }
 
-                // Optional: Validate file size (max 5MB)
+                // Validate file size (max 5MB)
                 long maxSize = 5 * 1024 * 1024; // 5MB
                 if (request.getProfileImage().getSize() > maxSize) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)

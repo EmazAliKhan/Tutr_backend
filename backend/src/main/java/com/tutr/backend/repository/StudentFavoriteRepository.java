@@ -26,4 +26,5 @@ public interface StudentFavoriteRepository extends JpaRepository<StudentFavorite
     // Delete a favorite by student and course
     void deleteByStudentIdAndCourseId(Long studentId, Long courseId);
 
+    void deleteByCourseId(Long courseId);
 }

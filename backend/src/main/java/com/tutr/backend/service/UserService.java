@@ -157,7 +157,7 @@ public class UserService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ADD THESE 3 LINES - Email verification check
+        //  - Email verification check
         if (!emailVerificationService.isEmailVerified(user.getEmail())) {
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
