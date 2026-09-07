@@ -21,25 +21,26 @@ public class FavoriteService {
 
     @Transactional
     public String addToFavorites(Long studentId, Long courseId) {
-        // Check if student exists
         StudentProfile student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        // Check if course exists
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
-        // Check if course is available
+        // ✅ Check if course is available
         if (!course.getIsAvailable()) {
             throw new RuntimeException("Cannot favorite an unavailable course");
         }
 
-        // Check if already favorited
+        // ✅ Check if tutor is ACTIVE
+        if (course.getTutorProfile().getUser().getAccountStatus() != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Cannot favorite a course from an inactive tutor");
+        }
+
         if (favoriteRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
             throw new RuntimeException("Course already in favorites");
         }
 
-        // Create favorite
         StudentFavorite favorite = StudentFavorite.builder()
                 .student(student)
                 .course(course)
@@ -53,14 +54,11 @@ public class FavoriteService {
 
     @Transactional
     public String removeFromFavorites(Long studentId, Long courseId) {
-        // Check if exists
         if (!favoriteRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
             throw new RuntimeException("Course not in favorites");
         }
 
-        // Delete
         favoriteRepository.deleteByStudentIdAndCourseId(studentId, courseId);
-
         return "Course removed from favorites successfully";
     }
 
@@ -75,18 +73,22 @@ public class FavoriteService {
     }
 
     public List<FavoriteCourse> getStudentFavorites(Long studentId) {
-        // Verify student exists
         if (!studentRepository.existsById(studentId)) {
             throw new RuntimeException("Student not found");
         }
 
-        // Get all favorites for the student (ordered by date - newest first)
         List<StudentFavorite> favorites = favoriteRepository
                 .findByStudentIdOrderByFavoritedAtDesc(studentId);
 
-        // Filter to ONLY include available courses
+        // ✅ Filter: Course must be available AND tutor must be ACTIVE
         return favorites.stream()
-                .filter(favorite -> favorite.getCourse().getIsAvailable()) //
+                .filter(favorite -> {
+                    Course course = favorite.getCourse();
+                    TutorProfile tutor = course.getTutorProfile();
+
+                    return course.getIsAvailable() &&
+                            tutor.getUser().getAccountStatus() == AccountStatus.ACTIVE;
+                })
                 .map(favorite -> {
                     Course course = favorite.getCourse();
                     TutorProfile tutor = course.getTutorProfile();
@@ -98,7 +100,7 @@ public class FavoriteService {
                             .category(course.getCategory() != null ? course.getCategory().toString() : "N/A")
                             .teachingMode(course.getTeachingMode() != null ? course.getTeachingMode().toString() : "N/A")
                             .price(course.getPrice())
-                            .averageRating(0.0) // You can add rating logic later if needed
+                            .averageRating(0.0)
                             .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
                             .tutorId(tutor.getId())
                             .location(course.getLocation())

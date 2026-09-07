@@ -11,6 +11,7 @@ public class StudentDashboard {
     private Long studentId;
     private String studentName;
     private String studentImage;
+    private String accountStatus;
 
     // Top Tutors
     private List<TopTutor> topTutors;

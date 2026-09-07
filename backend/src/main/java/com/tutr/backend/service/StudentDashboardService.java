@@ -22,6 +22,12 @@ public class StudentDashboardService {
         StudentProfile student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
+        //  Get account status from user
+        User user = student.getUser();
+        String accountStatus = user.getAccountStatus() != null
+                ? user.getAccountStatus().toString()
+                : "UNKNOWN";
+
         // Get blocked tutors for this student
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
@@ -40,6 +46,7 @@ public class StudentDashboardService {
                 .studentId(studentId)
                 .studentName(student.getFirstName() + " " + student.getLastName())
                 .studentImage(student.getProfilePictureUrl())
+                .accountStatus(accountStatus)
                 .topTutors(filteredTopTutors)
                 .recommendedCourses(recommendedCourses)
                 .build();

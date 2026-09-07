@@ -6,5 +6,6 @@ public enum ConnectionStatus {
     CONFIRMED,    // When either party accepts, it becomes CONFIRMED
     CANCELLED,
     DISCONNECTED,  // When either party disconnects
-    REJECTED
-    }
+    REJECTED,
+    EXPIRED
+}

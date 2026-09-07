@@ -37,6 +37,10 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Builder.Default
+    private boolean deletionWarningSent = false;
+    private LocalDateTime deleteAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

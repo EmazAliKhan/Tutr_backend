@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -154,19 +155,36 @@ public class ConnectionController {
 
     // ============ TUTOR COURSE-SPECIFIC BIDS ============
 
-    @GetMapping("/tutor/{tutorId}/course/{courseId}/bids")
-    public ResponseEntity<?> getTutorCourseBids(
+//    @GetMapping("/tutor/{tutorId}/course/{courseId}/bids")
+//    public ResponseEntity<?> getTutorCourseBids(
+//            @PathVariable Long tutorId,
+//            @PathVariable Long courseId) {
+//        try {
+//            List<TutorBid> bids = connectionService.getTutorCourseBids(tutorId, courseId);
+//            return ResponseEntity.ok(bids);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Error fetching course bids: " + e.getMessage());
+//        }
+//    }
+
+
+    @GetMapping("/tutor/{tutorId}/course/{courseId}/student/{studentId}/bid")
+    public ResponseEntity<?> getTutorCourseBidForStudent(
             @PathVariable Long tutorId,
-            @PathVariable Long courseId) {
+            @PathVariable Long courseId,
+            @PathVariable Long studentId) {
         try {
-            List<TutorBid> bids = connectionService.getTutorCourseBids(tutorId, courseId);
-            return ResponseEntity.ok(bids);
+            TutorBid bid = connectionService.getTutorCourseBidForStudent(tutorId, courseId, studentId);
+            if (bid == null) {
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+            return ResponseEntity.ok(bid);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching course bids: " + e.getMessage());
+                    .body("Error fetching course bid: " + e.getMessage());
         }
     }
-
     // ============  STUDENT BID APIS ============
 
     // KEEP THIS - Get bids for a specific course

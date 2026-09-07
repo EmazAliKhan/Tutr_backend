@@ -40,7 +40,9 @@ public class TutorStudentConnection {
     // Timestamps
     private LocalDateTime requestedAt;
     private LocalDateTime tutorRespondedAt;
+    private LocalDateTime studentRespondedAt;
     private LocalDateTime confirmedAt;
+    private LocalDateTime expiresAt;
 
     @Builder.Default
     private Boolean isActive = true;

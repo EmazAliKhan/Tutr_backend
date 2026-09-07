@@ -58,6 +58,9 @@ public class StudentProfileService {
 
         // Update user registration step
         user.setRegistrationStep(2);
+
+        user.setDeleteAt(null);
+        user.setDeletionWarningSent(false);
         userRepository.save(user);
 
         return studentProfileRepository.save(profile);

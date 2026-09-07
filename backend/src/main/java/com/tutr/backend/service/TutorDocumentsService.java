@@ -56,6 +56,11 @@ public class TutorDocumentsService {
 
             // Update user registration step
             user.setRegistrationStep(3);
+            user.setDeleteAt(null);
+            user.setDeletionWarningSent(false);
+
+
+
             userRepository.save(user);
 
             // Save to database

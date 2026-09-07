@@ -4,6 +4,7 @@ import com.tutr.backend.dto.*;
 import com.tutr.backend.model.*;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -25,6 +26,10 @@ public class ConnectionService {
     private final TutorProfileRepository tutorRepository;
     private final RatingReviewRepository ratingRepository;
 
+    private static final int EXPIRY_HOURS = 48;
+
+    // ============ STUDENT REQUEST WITH 48-HOUR EXPIRY ============
+
     @Transactional
     public TutorStudentConnection requestConnection(ConnectionRequest request) {
         Course course = courseRepository.findById(request.getCourseId())
@@ -33,11 +38,20 @@ public class ConnectionService {
         StudentProfile student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
+        // ✅ Check if student is ACTIVE
+        if (student.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+            throw new RuntimeException("Your account is deactivated. Please reactivate to send requests.");
+        }
+
         if (!course.getIsAvailable()) {
             throw new RuntimeException("Course is not available");
         }
 
-        //  Check if there's any PENDING or NEGOTIATING connection (active ones)
+        // Check if tutor is ACTIVE
+        if (course.getTutorProfile().getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+            throw new RuntimeException("Tutor is not available");
+        }
+
         boolean hasActiveRequest = connectionRepository
                 .existsByCourseIdAndStudentIdAndStatusIn(
                         course.getId(),
@@ -49,13 +63,17 @@ public class ConnectionService {
             throw new RuntimeException("You already have an active request for this course");
         }
 
-        //  Create new connection (ignore DISCONNECTED/CANCELLED ones)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusHours(EXPIRY_HOURS);  // ✅ 48 hours from now
+
         TutorStudentConnection.TutorStudentConnectionBuilder builder = TutorStudentConnection.builder()
                 .course(course)
                 .student(student)
                 .tutor(course.getTutorProfile())
                 .originalPrice(course.getPrice())
-                .requestedAt(LocalDateTime.now());
+                .requestedAt(now)
+                .expiresAt(expiresAt)  // ✅ Set expiry
+                .isActive(true);
 
         if (request.getSuggestedPrice() != null) {
             builder.studentCounterOffer(request.getSuggestedPrice())
@@ -67,21 +85,30 @@ public class ConnectionService {
         return connectionRepository.save(builder.build());
     }
 
+    // ============ TUTOR RESPOND WITH EXPIRY RESET ============
 
     @Transactional
     public TutorStudentConnection tutorRespond(Long connectionId, boolean accept, Double counterOffer) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
+        // ✅ Check if connection is expired
+        if (connection.getExpiresAt() != null && connection.getExpiresAt().isBefore(LocalDateTime.now())) {
+            connection.setStatus(ConnectionStatus.EXPIRED);
+            connection.setIsActive(false);
+            connectionRepository.save(connection);
+            throw new RuntimeException("This bid has expired (48 hours passed). Please create a new request.");
+        }
+
         if (connection.getStatus() != ConnectionStatus.PENDING &&
                 connection.getStatus() != ConnectionStatus.NEGOTIATING) {
             throw new RuntimeException("Cannot respond to this request");
         }
 
-        connection.setTutorRespondedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        connection.setTutorRespondedAt(now);
 
         if (counterOffer != null) {
-            // Tutor made a counter offer
             Double previousTutorOffer = connection.getTutorCounterOffer();
             Double lastStudentOffer = connection.getStudentCounterOffer();
 
@@ -95,48 +122,61 @@ public class ConnectionService {
 
             connection.setTutorCounterOffer(counterOffer);
             connection.setStatus(ConnectionStatus.NEGOTIATING);
+            connection.setTutorRespondedAt(now);
+
+            // ✅ Reset expiry to 48 hours from now (student has 48 hours to respond)
+            connection.setExpiresAt(now.plusHours(EXPIRY_HOURS));
 
         } else if (accept) {
-            // Tutor accepted student's offer
             Double priceToAccept = connection.getStudentCounterOffer() != null ?
                     connection.getStudentCounterOffer() :
                     connection.getOriginalPrice();
             connection.setAgreedPrice(priceToAccept);
             connection.setStatus(ConnectionStatus.CONFIRMED);
-            connection.setConfirmedAt(LocalDateTime.now());
+            connection.setConfirmedAt(now);
+            connection.setExpiresAt(null);  // ✅ No expiry for confirmed connections
 
         } else {
-            // Tutor rejected -  Changed to REJECTED
             connection.setStatus(ConnectionStatus.REJECTED);
             connection.setIsActive(false);
+            connection.setExpiresAt(null);
         }
 
         return connectionRepository.save(connection);
     }
+
+    // ============ STUDENT RESPOND WITH EXPIRY RESET ============
 
     @Transactional
     public TutorStudentConnection studentRespondToCounter(Long connectionId, boolean accept, Double newOffer) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
+        // ✅ Check if connection is expired
+        if (connection.getExpiresAt() != null && connection.getExpiresAt().isBefore(LocalDateTime.now())) {
+            connection.setStatus(ConnectionStatus.EXPIRED);
+            connection.setIsActive(false);
+            connectionRepository.save(connection);
+            throw new RuntimeException("This bid has expired (48 hours passed). Please create a new request.");
+        }
+
         if (connection.getStatus() != ConnectionStatus.NEGOTIATING) {
             throw new RuntimeException("No active negotiation found");
         }
 
-        if (accept) {
-            // Student accepted tutor's offer
-            Double agreedPrice = connection.getTutorCounterOffer();
+        LocalDateTime now = LocalDateTime.now();
 
+        if (accept) {
+            Double agreedPrice = connection.getTutorCounterOffer();
             if (agreedPrice == null) {
                 agreedPrice = connection.getOriginalPrice();
             }
-
             connection.setAgreedPrice(agreedPrice);
             connection.setStatus(ConnectionStatus.CONFIRMED);
-            connection.setConfirmedAt(LocalDateTime.now());
+            connection.setConfirmedAt(now);
+            connection.setExpiresAt(null);  // ✅ No expiry for confirmed connections
 
         } else if (newOffer != null) {
-            // Student making a new counter offer
             Double previousStudentOffer = connection.getStudentCounterOffer();
             Double lastTutorOffer = connection.getTutorCounterOffer();
 
@@ -150,15 +190,22 @@ public class ConnectionService {
 
             connection.setStudentCounterOffer(newOffer);
             connection.setStatus(ConnectionStatus.NEGOTIATING);
+            connection.setStudentRespondedAt(now);
+            connection.setRequestedAt(now);
+
+            // ✅ Reset expiry to 48 hours from now (tutor has 48 hours to respond)
+            connection.setExpiresAt(now.plusHours(EXPIRY_HOURS));
 
         } else {
-            // Student rejected -  Changed to REJECTED
             connection.setStatus(ConnectionStatus.REJECTED);
             connection.setIsActive(false);
+            connection.setExpiresAt(null);
         }
 
         return connectionRepository.save(connection);
     }
+
+    // ============ DISCONNECT CONNECTION ============
 
     @Transactional
     public TutorStudentConnection disconnectConnection(Long connectionId, String disconnectedBy) {
@@ -167,44 +214,68 @@ public class ConnectionService {
 
         connection.setStatus(ConnectionStatus.DISCONNECTED);
         connection.setIsActive(false);
+        connection.setExpiresAt(null);
 
         System.out.println("Connection " + connectionId + " disconnected by " + disconnectedBy);
 
         return connectionRepository.save(connection);
     }
 
-    /**
-     * Student cancels their pending connection request
-     * Only works if status is PENDING
-     */
+    // ============ STUDENT CANCEL PENDING ============
+
     @Transactional
     public TutorStudentConnection studentCancelPending(Long connectionId) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
-        // Verify this connection belongs to a student
         if (connection.getStudent() == null) {
             throw new RuntimeException("Invalid connection");
         }
 
-        // Only allow cancellation if status is PENDING
         if (connection.getStatus() != ConnectionStatus.PENDING) {
             throw new RuntimeException("Can only cancel requests with PENDING status. Current status: " + connection.getStatus());
         }
 
-        // Cancel the connection
         connection.setStatus(ConnectionStatus.CANCELLED);
         connection.setIsActive(false);
+        connection.setExpiresAt(null);
 
         System.out.println("Connection " + connectionId + " cancelled by student");
 
         return connectionRepository.save(connection);
     }
 
+    // ============ SCHEDULED JOB: AUTO-DELETE EXPIRED BIDS ============
+
+    @Transactional
+    @Scheduled(fixedDelay = 3600000)  // ✅ Runs every 1 hour
+    public void deleteExpiredBids() {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<TutorStudentConnection> expiredConnections = connectionRepository
+                .findByStatusInAndExpiresAtBeforeAndIsActiveTrue(
+                        Arrays.asList(ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING),
+                        now
+                );
+
+        if (!expiredConnections.isEmpty()) {
+            System.out.println("Deleting " + expiredConnections.size() + " expired bids...");
+
+            for (TutorStudentConnection conn : expiredConnections) {
+                conn.setStatus(ConnectionStatus.EXPIRED);
+                conn.setIsActive(false);
+                connectionRepository.save(conn);
+                System.out.println("Expired bid deleted: Connection ID " + conn.getId());
+            }
+        }
+    }
+
+    // ============ EXISTING GETTER METHODS (Update to filter EXPIRED) ============
 
     public List<ConnectionResponse> getStudentConnections(Long studentId) {
         return connectionRepository.findByStudentId(studentId)
                 .stream()
+                .filter(conn -> conn.getStatus() != ConnectionStatus.EXPIRED)  // ✅ Filter EXPIRED
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -212,6 +283,7 @@ public class ConnectionService {
     public List<ConnectionResponse> getTutorConnections(Long tutorId) {
         return connectionRepository.findByTutorId(tutorId)
                 .stream()
+                .filter(conn -> conn.getStatus() != ConnectionStatus.EXPIRED)  // ✅ Filter EXPIRED
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -219,6 +291,7 @@ public class ConnectionService {
     public List<ConnectionResponse> getPendingRequestsForTutor(Long tutorId) {
         return connectionRepository.findByTutorIdAndStatus(tutorId, ConnectionStatus.PENDING)
                 .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -240,41 +313,36 @@ public class ConnectionService {
     public List<ConnectionResponse> getNegotiationsForTutor(Long tutorId) {
         return connectionRepository.findByTutorIdAndStatus(tutorId, ConnectionStatus.NEGOTIATING)
                 .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     public List<TutorBid> getTutorBidsWithCourseCard(Long tutorId) {
-        // Get all negotiating connections (bids)
         List<TutorStudentConnection> bids = connectionRepository
-                .findByTutorIdAndStatus(tutorId, ConnectionStatus.NEGOTIATING);
+                .findByTutorIdAndStatus(tutorId, ConnectionStatus.NEGOTIATING)
+                .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
+                .collect(Collectors.toList());
 
         return bids.stream()
                 .map(conn -> {
                     StudentProfile student = conn.getStudent();
                     Course course = conn.getCourse();
-
-                    // Get average rating for this course
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
                     return TutorBid.builder()
                             .connectionId(conn.getId())
                             .requestedAt(conn.getRequestedAt())
-
-                            // Student Info
                             .studentId(student.getId())
                             .studentName(student.getFirstName() + " " + student.getLastName())
                             .studentImage(student.getProfilePictureUrl())
-
-                            // Course Card Info
                             .courseId(course.getId())
                             .subject(course.getSubject())
                             .category(course.getCategory())
                             .teachingMode(course.getTeachingMode())
                             .price(course.getPrice())
                             .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
-
-                            // Pricing Details
                             .originalPrice(conn.getOriginalPrice())
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
@@ -285,13 +353,17 @@ public class ConnectionService {
     }
 
     public List<TutorBid> getTutorCourseBids(Long tutorId, Long courseId) {
-        // Get PENDING connections
         List<TutorStudentConnection> pendingBids = connectionRepository
-                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.PENDING);
+                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.PENDING)
+                .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
+                .collect(Collectors.toList());
 
-        // Get NEGOTIATING connections
         List<TutorStudentConnection> negotiatingBids = connectionRepository
-                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.NEGOTIATING);
+                .findByTutorIdAndCourseIdAndStatus(tutorId, courseId, ConnectionStatus.NEGOTIATING)
+                .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
+                .collect(Collectors.toList());
 
         List<TutorStudentConnection> allBids = new ArrayList<>();
         allBids.addAll(pendingBids);
@@ -301,28 +373,20 @@ public class ConnectionService {
                 .map(conn -> {
                     StudentProfile student = conn.getStudent();
                     Course course = conn.getCourse();
-
-                    // Get average rating for this course
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
                     return TutorBid.builder()
                             .connectionId(conn.getId())
                             .requestedAt(conn.getRequestedAt())
-
-                            // Student Info
                             .studentId(student.getId())
                             .studentName(student.getFirstName() + " " + student.getLastName())
                             .studentImage(student.getProfilePictureUrl())
-
-                            // Course Card Info
                             .courseId(course.getId())
                             .subject(course.getSubject())
                             .category(course.getCategory())
                             .teachingMode(course.getTeachingMode())
                             .price(course.getPrice())
                             .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
-
-                            // Pricing Details
                             .originalPrice(conn.getOriginalPrice())
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
@@ -332,52 +396,17 @@ public class ConnectionService {
                 .collect(Collectors.toList());
     }
 
-    public ConnectionResponse convertToResponse(TutorStudentConnection conn) {
-        StudentProfile student = conn.getStudent();
-        TutorProfile tutor = conn.getTutor();
-        Course course = conn.getCourse();
-
-        // Get average rating for this course
-        Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
-
-        return ConnectionResponse.builder()
-                .connectionId(conn.getId())
-                .courseId(conn.getCourse().getId())
-                .subject(conn.getCourse().getSubject())
-                .studentId(student.getId())
-                .studentName(student.getFirstName() + " " + student.getLastName())
-                .studentImage(student.getProfilePictureUrl())  // NOW student is defined
-                .tutorId(tutor.getId())
-                .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
-                .tutorImage(tutor.getProfilePictureUrl())
-                .tutorHeadline(tutor.getHeadline())
-                .status(conn.getStatus())
-                .originalPrice(conn.getOriginalPrice())
-                .tutorCounterOffer(conn.getTutorCounterOffer())
-                .studentCounterOffer(conn.getStudentCounterOffer())
-                .agreedPrice(conn.getAgreedPrice())
-                .requestedAt(conn.getRequestedAt())
-                .tutorRespondedAt(conn.getTutorRespondedAt())
-                .lastUpdated(conn.getConfirmedAt() != null ? conn.getConfirmedAt() :
-                        conn.getTutorRespondedAt() != null ? conn.getTutorRespondedAt() :
-                                conn.getRequestedAt())
-                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
-                .location(course.getLocation())
-                .teachingMode(course.getTeachingMode())
-                .category(course.getCategory())
-                .build();
-    }
-
     public List<StudentBid> getStudentBidsWithDetails(Long studentId) {
-        // Get all negotiating connections (bids) for this student
         List<TutorStudentConnection> bids = connectionRepository
-                .findByStudentIdAndStatus(studentId, ConnectionStatus.NEGOTIATING);
+                .findByStudentIdAndStatus(studentId, ConnectionStatus.NEGOTIATING)
+                .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
+                .collect(Collectors.toList());
 
         return bids.stream()
                 .map(conn -> {
                     TutorProfile tutor = conn.getTutor();
                     Course course = conn.getCourse();
-
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
                     return StudentBid.builder()
@@ -411,11 +440,11 @@ public class ConnectionService {
     }
 
     public List<StudentBid> getStudentCourseBids(Long studentId, Long courseId) {
-        // Get all negotiating connections (bids) for this student and specific course
-//        List<TutorStudentConnection> bids = connectionRepository
-//                .findByStudentIdAndCourseIdAndStatus(studentId, courseId, ConnectionStatus.NEGOTIATING);
         List<TutorStudentConnection> bids = connectionRepository
-                .findStudentCourseRequests(studentId, courseId);
+                .findStudentCourseRequests(studentId, courseId)
+                .stream()
+                .filter(conn -> conn.getExpiresAt() == null || conn.getExpiresAt().isAfter(LocalDateTime.now()))  // ✅ Only active
+                .collect(Collectors.toList());
 
         if (bids.isEmpty()) {
             return new ArrayList<>();
@@ -425,7 +454,6 @@ public class ConnectionService {
                 .map(conn -> {
                     TutorProfile tutor = conn.getTutor();
                     Course course = conn.getCourse();
-
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
                     return StudentBid.builder()
@@ -462,14 +490,17 @@ public class ConnectionService {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
-        // Verify this is a bid (NEGOTIATING status)
         if (connection.getStatus() != ConnectionStatus.NEGOTIATING) {
             throw new RuntimeException("This is not an active bid");
         }
 
+        // ✅ Check if expired
+        if (connection.getExpiresAt() != null && connection.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("This bid has expired");
+        }
+
         TutorProfile tutor = connection.getTutor();
         Course course = connection.getCourse();
-
         Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
 
         return StudentBid.builder()
@@ -501,11 +532,9 @@ public class ConnectionService {
     }
 
     public ConnectionResponse getConnectionStatus(Long studentId, Long connectionId) {
-        // Find the connection
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
-        // Verify this connection belongs to the student
         if (!connection.getStudent().getId().equals(studentId)) {
             throw new RuntimeException("Unauthorized: This connection does not belong to the student");
         }
@@ -513,7 +542,46 @@ public class ConnectionService {
         return convertToResponse(connection);
     }
 
-    //Helper method
+    public TutorBid getTutorCourseBidForStudent(Long tutorId, Long courseId, Long studentId) {
+        List<TutorStudentConnection> connections = connectionRepository
+                .findByTutorIdAndCourseIdAndStudentIdAndStatusIn(
+                        tutorId, courseId, studentId,
+                        Arrays.asList(ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING)
+                );
+
+        if (connections.isEmpty()) {
+            return null;
+        }
+
+        TutorStudentConnection conn = connections.get(0);
+        StudentProfile student = conn.getStudent();
+        Course course = conn.getCourse();
+
+        Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+        return TutorBid.builder()
+                .connectionId(conn.getId())
+                .requestedAt(conn.getRequestedAt())
+                .studentId(student.getId())
+                .studentName(student.getFirstName() + " " + student.getLastName())
+                .studentImage(student.getProfilePictureUrl())
+                .courseId(course.getId())
+                .subject(course.getSubject())
+                .category(course.getCategory())
+                .teachingMode(course.getTeachingMode())
+                .price(course.getPrice())
+                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                .originalPrice(conn.getOriginalPrice())
+                .studentBidPrice(conn.getStudentCounterOffer())
+                .tutorOffer(conn.getTutorCounterOffer())
+                .status(conn.getStatus().toString())
+                .build();
+    }
+
+
+
+    // ============ HELPER METHODS ============
+
     private String formatTo12Hour(LocalTime time) {
         if (time == null) return "N/A";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a");
@@ -522,18 +590,47 @@ public class ConnectionService {
 
     private List<String> getDaysInRange(DaysOfWeek from, DaysOfWeek to) {
         if (from == null || to == null) return new ArrayList<>();
-
         List<String> days = new ArrayList<>();
         DaysOfWeek[] allDays = DaysOfWeek.values();
-
         int start = from.ordinal();
         int end = to.ordinal();
-
         for (int i = start; i <= end; i++) {
             days.add(allDays[i].toString());
         }
-
         return days;
     }
 
+    public ConnectionResponse convertToResponse(TutorStudentConnection conn) {
+        StudentProfile student = conn.getStudent();
+        TutorProfile tutor = conn.getTutor();
+        Course course = conn.getCourse();
+        Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
+
+        return ConnectionResponse.builder()
+                .connectionId(conn.getId())
+                .courseId(conn.getCourse().getId())
+                .subject(conn.getCourse().getSubject())
+                .studentId(student.getId())
+                .studentName(student.getFirstName() + " " + student.getLastName())
+                .studentImage(student.getProfilePictureUrl())
+                .tutorId(tutor.getId())
+                .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                .tutorImage(tutor.getProfilePictureUrl())
+                .tutorHeadline(tutor.getHeadline())
+                .status(conn.getStatus())
+                .originalPrice(conn.getOriginalPrice())
+                .tutorCounterOffer(conn.getTutorCounterOffer())
+                .studentCounterOffer(conn.getStudentCounterOffer())
+                .agreedPrice(conn.getAgreedPrice())
+                .requestedAt(conn.getRequestedAt())
+                .tutorRespondedAt(conn.getTutorRespondedAt())
+                .lastUpdated(conn.getConfirmedAt() != null ? conn.getConfirmedAt() :
+                        conn.getTutorRespondedAt() != null ? conn.getTutorRespondedAt() :
+                                conn.getRequestedAt())
+                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                .location(course.getLocation())
+                .teachingMode(course.getTeachingMode())
+                .category(course.getCategory())
+                .build();
+    }
 }

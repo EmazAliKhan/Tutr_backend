@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -135,12 +136,15 @@ public class UserService {
         AccountStatus status = (role == Role.STUDENT) ? AccountStatus.ACTIVE : AccountStatus.PENDING;
 
         User user = User.builder()
-                .email(normalizedEmail)  // Use normalized email
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(role)
                 .accountStatus(status)
                 .registrationStep(0)
                 .emailVerified(false)
+                .createdAt(LocalDateTime.now())
+                .deleteAt(LocalDateTime.now().plusDays(10))
+                .deletionWarningSent(false)
                 .build();
 
         // Store in temporary cache with normalized email
@@ -168,6 +172,9 @@ public class UserService {
         }
 
         user.setRegistrationStep(2);
+        user.setDeleteAt(null);
+        user.setDeletionWarningSent(false);
+
         userRepository.save(user);
 
 

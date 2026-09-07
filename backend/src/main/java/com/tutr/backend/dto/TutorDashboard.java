@@ -11,6 +11,7 @@ public class TutorDashboard {
     private Long tutorId;
     private String tutorName;
     private String tutorImage;
+    private String accountStatus;
 
     // Statistics
     private Integer totalActiveStudents;

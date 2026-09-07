@@ -4,6 +4,8 @@ import com.tutr.backend.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,4 +64,51 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     List<TutorStudentConnection> findStudentCourseRequests(
             @Param("studentId") Long studentId,
             @Param("courseId") Long courseId);
+
+
+
+
+
+
+
+
+    // new
+    // for tutor
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.status IN :statuses")
+    List<TutorStudentConnection> findByTutorIdAndStatusIn(
+            @Param("tutorId") Long tutorId,
+            @Param("statuses") List<ConnectionStatus> statuses);
+
+    //  for student
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.student.id = :studentId AND c.status IN :statuses")
+    List<TutorStudentConnection> findByStudentIdAndStatusIn(
+            @Param("studentId") Long studentId,
+            @Param("statuses") List<ConnectionStatus> statuses);
+
+
+
+    //  Find active connections by status and expiry
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.status IN :statuses AND c.expiresAt <= :now AND c.isActive = true")
+    List<TutorStudentConnection> findByStatusInAndExpiresAtBeforeAndIsActiveTrue(
+            @Param("statuses") List<ConnectionStatus> statuses,
+            @Param("now") LocalDateTime now);
+
+    //  Find expired connections (optional)
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.expiresAt <= :now AND c.status IN ('PENDING', 'NEGOTIATING')")
+    List<TutorStudentConnection> findExpiredConnections(@Param("now") LocalDateTime now);
+
+
+    @Query("SELECT c FROM TutorStudentConnection c WHERE c.tutor.id = :tutorId AND c.course.id = :courseId AND c.student.id = :studentId AND c.status IN :statuses")
+    List<TutorStudentConnection> findByTutorIdAndCourseIdAndStudentIdAndStatusIn(
+            @Param("tutorId") Long tutorId,
+            @Param("courseId") Long courseId,
+            @Param("studentId") Long studentId,
+            @Param("statuses") List<ConnectionStatus> statuses);
+
 }
+
+
+
+
+
+

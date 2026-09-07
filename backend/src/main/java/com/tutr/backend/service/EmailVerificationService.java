@@ -73,27 +73,35 @@ public class EmailVerificationService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
-        message.setSubject("🔐 Welcome to Tutr - Verify Your Email");
+        String emailSubject = "🔐 Welcome to Tutr - Verify Your Email";
 
         String emailBody = """
-            Dear User,
-            
-            Thank you for choosing Tutr!
-            
-            Your verification code is: %s
-            
-            This code will expire in 3 minutes.
-            
-            Enter this code to complete your registration and start your learning journey.
-            
-            If you didn't sign up for Tutr, please ignore this email.
-            
-            Best regards,
-            The Tutr Team
-            
-            ---
-            Need help? Contact us at tutr.verify@gmail.com
-            """.formatted(otp);
+    Dear User,
+
+    Welcome to Tutr!
+
+    Your email verification code is: %s
+
+    This code will expire in 3 minutes.
+
+    Please enter this code to verify your email and continue your registration.
+
+    ───────────────────────────────────────
+
+    Registration Policy:
+    • Complete your registration within 10 days.
+    • Incomplete accounts will be automatically deleted after 10 days.
+    • A reminder email will be sent 24 hours before deletion.
+
+    By completing your registration, you agree to Tutr's terms and policies.
+
+    If you did not create a Tutr account, please ignore this email.
+
+    Best regards,
+    The Tutr Team
+
+    Support: tutr.verify@gmail.com
+    """.formatted(otp);
 
         message.setText(emailBody);
         mailSender.send(message);

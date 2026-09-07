@@ -26,6 +26,12 @@ public class TutorDashboardService {
 
         String tutorFullName = tutor.getFirstName() + " " + tutor.getLastName();
 
+        //  Get account status from user
+        User user = tutor.getUser();
+        String accountStatus = user.getAccountStatus() != null
+                ? user.getAccountStatus().toString()
+                : "UNKNOWN";
+
         // 2. Get all courses for this tutor
         List<Course> allCourses = courseRepository.findByTutorProfileId(tutorId);
 
@@ -48,6 +54,7 @@ public class TutorDashboardService {
                 .tutorId(tutorId)
                 .tutorName(tutorFullName)
                 .tutorImage(tutor.getProfilePictureUrl())
+                .accountStatus(accountStatus)
                 .totalActiveStudents(totalActiveStudents)
                 .totalActiveCourses((int) totalActiveCourses)
                 .topCourses(topCourses)

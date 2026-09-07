@@ -29,31 +29,27 @@ public class CourseService {
     private final RatingReviewRepository ratingRepository;
     private final FavoriteService favoriteService;
     private final BlockService blockService;
+
 // ============ HELPER METHODS FOR TIME PARSING ============
 
-    // Helper method to parse 12-hour time format with AM/PM
     private LocalTime parseTime(String timeStr) {
         if (timeStr == null || timeStr.isEmpty()) {
             throw new RuntimeException("Time is required");
         }
 
         try {
-            // Try parsing with pattern "hh:mm a" (e.g., "02:00 PM")
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH);
             return LocalTime.parse(timeStr.toUpperCase(), formatter);
         } catch (DateTimeParseException e1) {
             try {
-                // Try parsing with pattern "h:mm a" (e.g., "2:00 PM")
                 DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
                 return LocalTime.parse(timeStr.toUpperCase(), formatter2);
             } catch (DateTimeParseException e2) {
                 try {
-                    // Try parsing with pattern "hh:mma" (e.g., "02:00PM")
                     DateTimeFormatter formatter3 = DateTimeFormatter.ofPattern("hh:mma", Locale.ENGLISH);
                     return LocalTime.parse(timeStr.toUpperCase(), formatter3);
                 } catch (DateTimeParseException e3) {
                     try {
-                        // Try parsing with pattern "h:mma" (e.g., "2:00PM")
                         DateTimeFormatter formatter4 = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
                         return LocalTime.parse(timeStr.toUpperCase(), formatter4);
                     } catch (DateTimeParseException e4) {
@@ -64,14 +60,12 @@ public class CourseService {
         }
     }
 
-    // Helper method to format time to 12-hour format with AM/PM
     private String formatTo12Hour(LocalTime time) {
         if (time == null) return "N/A";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a");
         return time.format(formatter);
     }
 
-    // Helper method to calculate total hours
     private String calculateTotalHours(LocalTime start, LocalTime end) {
         if (start == null || end == null) return "N/A";
 
@@ -99,25 +93,19 @@ public class CourseService {
         int start = from.ordinal();
         int end = to.ordinal();
 
-        // Same day = 1 day (only that day)
         if (start == end) {
             days.add(allDays[start].toString());
             return days;
         }
 
-        // Normal range (from day comes before to day)
         if (start < end) {
             for (int i = start; i <= end; i++) {
                 days.add(allDays[i].toString());
             }
         } else {
-            // Wraparound: from day after to day (crossing weekend)
-            // Example: Friday (4) to Monday (0)
-            // Add from Friday to Sunday
             for (int i = start; i < allDays.length; i++) {
                 days.add(allDays[i].toString());
             }
-            // Add from Monday to end day
             for (int i = 0; i <= end; i++) {
                 days.add(allDays[i].toString());
             }
@@ -126,16 +114,14 @@ public class CourseService {
         return days;
     }
 
-    // ============ UPDATED CREATE COURSE WITH 12-HOUR TIME ============
+    // ============ CREATE COURSE ============
 
     @Transactional
     public Course createCourse(CourseRequest request) {
-        // Just ensure days are not null
         if (request.getFromDay() == null || request.getToDay() == null) {
             throw new RuntimeException("From day and To day are required");
         }
 
-        // Parse and validate times from 12-hour format
         LocalTime startTime = parseTime(request.getStartTime());
         LocalTime endTime = parseTime(request.getEndTime());
 
@@ -143,16 +129,13 @@ public class CourseService {
             throw new RuntimeException("Start time must be before end time");
         }
 
-        // Find tutor profile
         TutorProfile tutorProfile = tutorProfileRepository.findById(request.getTutorProfileId())
                 .orElseThrow(() -> new RuntimeException("Tutor profile not found"));
 
-        // Check if tutor is active
         if (tutorProfile.getUser().getAccountStatus() != AccountStatus.ACTIVE) {
             throw new RuntimeException("Only active tutors can create courses");
         }
 
-        // Create course with parsed LocalTime
         Course course = Course.builder()
                 .tutorProfile(tutorProfile)
                 .about(request.getAbout())
@@ -162,8 +145,8 @@ public class CourseService {
                 .location(request.getLocation())
                 .fromDay(request.getFromDay())
                 .toDay(request.getToDay())
-                .startTime(startTime)      // Store as LocalTime in DB
-                .endTime(endTime)          // Store as LocalTime in DB
+                .startTime(startTime)
+                .endTime(endTime)
                 .classesPerMonth(request.getClassesPerMonth())
                 .price(request.getPrice())
                 .isAvailable(true)
@@ -173,14 +156,13 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    // ============ UPDATED UPDATE COURSE WITH 12-HOUR TIME ============
+    // ============ UPDATE COURSE ============
 
     @Transactional
     public Course updateCourse(Long courseId, CourseRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
-        // Update days if provided
         if (request.getFromDay() != null && request.getToDay() != null) {
             if (request.getFromDay().ordinal() > request.getToDay().ordinal()) {
                 throw new RuntimeException("From day must come before to day");
@@ -189,7 +171,6 @@ public class CourseService {
             course.setToDay(request.getToDay());
         }
 
-        // Update times if provided (in 12-hour format)
         if (request.getStartTime() != null && request.getEndTime() != null) {
             LocalTime startTime = parseTime(request.getStartTime());
             LocalTime endTime = parseTime(request.getEndTime());
@@ -201,7 +182,6 @@ public class CourseService {
             course.setEndTime(endTime);
         }
 
-        // Update other fields
         if (request.getAbout() != null) course.setAbout(request.getAbout());
         if (request.getSubject() != null) course.setSubject(request.getSubject());
         if (request.getCategory() != null) course.setCategory(request.getCategory());
@@ -214,7 +194,7 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    // ============ EXISTING METHODS (WITH 12-HOUR FORMATTING) ============
+    // ============ TOGGLE AVAILABILITY ============
 
     @Transactional
     public Course toggleAvailability(Long courseId) {
@@ -227,11 +207,15 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
+    // ============ GET COURSE BY ID FOR TUTOR ============
+
     public CourseResponse getCourseByIdForTutor(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         return convertToResponse(course);
     }
+
+    // ============ GET COURSES BY TUTOR ============
 
     public List<CourseResponse> getCoursesByTutor(Long tutorProfileId) {
         return courseRepository.findByTutorProfileId(tutorProfileId)
@@ -245,16 +229,12 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-//    public List<CourseResponse> getAvailableCoursesByTutor(Long tutorProfileId) {
-//        return courseRepository.findByTutorProfileIdAndIsAvailableTrue(tutorProfileId)
-//                .stream()
-//                .map(this::convertToResponse)
-//                .collect(Collectors.toList());
-//    }
+    // ============ GET ALL AVAILABLE COURSES ============
 
     public List<CourseResponse> getAllAvailableCourses() {
         return courseRepository.findByIsAvailableTrue()
                 .stream()
+                .filter(course -> course.getTutorProfile().getUser().getAccountStatus() == AccountStatus.ACTIVE) // ✅ Filter INACTIVE tutors
                 .map(course -> {
                     CourseResponse response = convertToResponse(course);
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
@@ -263,6 +243,8 @@ public class CourseService {
                 })
                 .collect(Collectors.toList());
     }
+
+    // ============ DELETE COURSE ============
 
     @Transactional
     public void deleteCourse(Long courseId) {
@@ -274,15 +256,14 @@ public class CourseService {
                 List.of(
                         ConnectionStatus.PENDING,
                         ConnectionStatus.NEGOTIATING,
-                        ConnectionStatus.CONFIRMED
+                        ConnectionStatus.CONFIRMED,
+                        ConnectionStatus.EXPIRED
                 )
         );
 
         if (hasActiveConnections) {
             throw new RuntimeException("Cannot delete course: Students are connected to this course");
         }
-
-        // Delete finished connections
 
         favoriteRepository.deleteByCourseId(courseId);
         ratingReviewRepository.deleteByCourseId(courseId);
@@ -298,6 +279,8 @@ public class CourseService {
         courseRepository.delete(course);
     }
 
+    // ============ SEARCH AVAILABLE COURSES FOR STUDENT ============
+
     public List<StudentCourseCard> searchAvailableCoursesForStudent(
             String subject,
             String location,
@@ -306,7 +289,6 @@ public class CourseService {
             PriceRange priceRange,
             Long studentId) {
 
-        // Convert PriceRange to min/max if needed
         Double minPrice = null;
         Double maxPrice = null;
 
@@ -333,27 +315,27 @@ public class CourseService {
             }
         }
 
-        // Get filtered courses
         List<Course> courses = courseRepository.searchAvailableCourses(
                 subject, location, category, teachingMode, minPrice, maxPrice);
 
-        // Get student's favorite course IDs (if studentId provided)
         List<Long> favoriteCourseIds = new ArrayList<>();
         if (studentId != null) {
             favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
         }
 
-        // Get student's blocked tutor IDs
         List<Long> blockedTutorIds = new ArrayList<>();
         if (studentId != null) {
             blockedTutorIds = blockService.getBlockedTutorIds(studentId);
         }
 
-        // FIX: Use a traditional for loop instead of stream with rank
         List<StudentCourseCard> results = new ArrayList<>();
 
         for (Course course : courses) {
-            // Skip if tutor is blocked
+            // ✅ Skip if tutor is INACTIVE
+            if (course.getTutorProfile().getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+                continue;
+            }
+
             if (blockedTutorIds.contains(course.getTutorProfile().getId())) {
                 continue;
             }
@@ -379,6 +361,8 @@ public class CourseService {
         return results;
     }
 
+    // ============ SEARCH AVAILABLE COURSES (GENERIC) ============
+
     public List<CourseResponse> searchAvailableCourses(
             String subject,
             String location,
@@ -389,7 +373,6 @@ public class CourseService {
         Double minPrice = null;
         Double maxPrice = null;
 
-        // Convert PriceRange to min/max
         if (priceRange != null) {
             switch (priceRange) {
                 case UNDER_1000:
@@ -417,6 +400,7 @@ public class CourseService {
                 subject, location, category, teachingMode, minPrice, maxPrice);
 
         return courses.stream()
+                .filter(course -> course.getTutorProfile().getUser().getAccountStatus() == AccountStatus.ACTIVE) // ✅ Filter INACTIVE tutors
                 .map(course -> {
                     CourseResponse response = convertToResponse(course);
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
@@ -425,6 +409,8 @@ public class CourseService {
                 })
                 .collect(Collectors.toList());
     }
+
+    // ============ CONVERT TO RESPONSE ============
 
     public CourseResponse convertToResponse(Course course) {
         TutorProfile tutor = course.getTutorProfile();
@@ -442,14 +428,16 @@ public class CourseService {
                 .fromDay(course.getFromDay())
                 .toDay(course.getToDay())
                 .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
-                .startTime(formatTo12Hour(course.getStartTime()))  // Format to 12-hour
-                .endTime(formatTo12Hour(course.getEndTime()))      // Format to 12-hour
+                .startTime(formatTo12Hour(course.getStartTime()))
+                .endTime(formatTo12Hour(course.getEndTime()))
                 .classesPerMonth(course.getClassesPerMonth())
                 .price(course.getPrice())
                 .isAvailable(course.getIsAvailable())
                 .createdAt(course.getCreatedAt())
                 .build();
     }
+
+    // ============ GET UNAVAILABLE COURSES BY TUTOR ============
 
     public List<CourseResponse> getUnavailableCoursesByTutor(Long tutorProfileId) {
         return courseRepository.findByTutorProfileId(tutorProfileId)
@@ -463,6 +451,8 @@ public class CourseService {
                 })
                 .collect(Collectors.toList());
     }
+
+    // ============ GET TUTOR COURSES WITH STATS ============
 
     public List<TutorCourse> getTutorCoursesWithStats(Long tutorProfileId) {
         List<Course> courses = courseRepository.findByTutorProfileId(tutorProfileId);
@@ -485,8 +475,8 @@ public class CourseService {
                             .category(course.getCategory())
                             .teachingMode(course.getTeachingMode())
                             .location(course.getLocation())
-                            .startTime(formatTo12Hour(course.getStartTime()))  // Now returns String
-                            .endTime(formatTo12Hour(course.getEndTime()))      // Now returns String
+                            .startTime(formatTo12Hour(course.getStartTime()))
+                            .endTime(formatTo12Hour(course.getEndTime()))
                             .fromDay(course.getFromDay())
                             .toDay(course.getToDay())
                             .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
@@ -503,7 +493,9 @@ public class CourseService {
                 })
                 .collect(Collectors.toList());
     }
-    // Get all courses as cards for tutor list view
+
+    // ============ GET TUTOR COURSE CARDS ============
+
     public List<CourseCard> getTutorCourseCards(Long tutorProfileId) {
         List<Course> courses = courseRepository.findByTutorProfileId(tutorProfileId);
         TutorProfile tutor = tutorProfileRepository.findById(tutorProfileId).orElse(null);
@@ -530,7 +522,8 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-    // Get detailed course information for single course view
+    // ============ GET TUTOR COURSE DETAIL ============
+
     public CourseDetail getTutorCourseDetail(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
@@ -574,73 +567,7 @@ public class CourseService {
                 .build();
     }
 
-//    public CourseDetail getStudentCourseDetail(Long courseId, Long studentId) {
-//        Course course = courseRepository.findById(courseId)
-//                .orElseThrow(() -> new RuntimeException("Course not found"));
-//
-//        if (!course.getIsAvailable()) {
-//            throw new RuntimeException("Course is not available");
-//        }
-//
-//        TutorProfile tutor = course.getTutorProfile();
-//        String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
-//
-//        Double avgRating = ratingRepository.getAverageRatingForCourse(courseId);
-//        int ratingCount = ratingRepository.getRatingCountForCourse(courseId);
-//        int studentCount = connectionRepository.findByCourseIdAndStatus(
-//                courseId, ConnectionStatus.CONFIRMED).size();
-//
-//
-//        Long connectionId = null;
-//        ConnectionStatus connectionStatus = null;
-//        Boolean isBlocked = false;
-//
-//        if (studentId != null) {
-//            // Get all connections for this student and course, ordered by requestedAt descending
-//            List<TutorStudentConnection> connections = connectionRepository
-//                    .findByStudentIdAndCourseIdOrderByRequestedAtDesc(studentId, courseId);
-//
-//            if (!connections.isEmpty()) {
-//                // Take the most recent connection
-//                TutorStudentConnection latestConnection = connections.get(0);
-//                connectionId = latestConnection.getId();
-//                connectionStatus = latestConnection.getStatus();
-//            }
-//
-//            // ============ CHECK IF TUTOR IS BLOCKED ============
-//            isBlocked = blockService.isTutorBlocked(studentId, tutor.getId());
-//        }
-//
-//        return CourseDetail.builder()
-//                .courseId(course.getId())
-//                .subject(course.getSubject())
-//                .about(course.getAbout())
-//                .category(course.getCategory())
-//                .teachingMode(course.getTeachingMode())
-//                .location(course.getLocation())
-//                .startTime(formatTo12Hour(course.getStartTime()))
-//                .endTime(formatTo12Hour(course.getEndTime()))
-//                .totalHours(calculateTotalHours(course.getStartTime(), course.getEndTime()))
-//                .fromDay(course.getFromDay())
-//                .toDay(course.getToDay())
-//                .daysRange(getDaysInRange(course.getFromDay(), course.getToDay()))
-//                .classesPerMonth(course.getClassesPerMonth())
-//                .price(course.getPrice())
-//                .isAvailable(course.getIsAvailable())
-//                .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
-//                .totalRatings(ratingCount)
-//                .totalStudents(studentCount)
-//                .tutorName(tutorName)
-//                .tutorId(tutor.getId())
-//                .tutorImage(tutor.getProfilePictureUrl())
-//                .tutorHeadline(tutor.getHeadline())
-//                .createdAt(course.getCreatedAt())
-//                .updatedAt(course.getUpdatedAt())
-//                .connectionId(connectionId)
-//                .connectionStatus(connectionStatus)
-//                .isBlocked(isBlocked)
-//                .build();
-//    }
+    // ============ GET STUDENT COURSE DETAIL ============
 
     public CourseDetail getStudentCourseDetail(Long courseId, Long studentId) {
         Course course = courseRepository.findById(courseId)
@@ -648,6 +575,11 @@ public class CourseService {
 
         TutorProfile tutor = course.getTutorProfile();
         String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
+
+        // ✅ If tutor is INACTIVE, throw error so student can't view
+        if (tutor.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+            throw new RuntimeException("This course is not available");
+        }
 
         Double avgRating = ratingRepository.getAverageRatingForCourse(courseId);
         int ratingCount = ratingRepository.getRatingCountForCourse(courseId);
@@ -670,9 +602,6 @@ public class CourseService {
 
             isBlocked = blockService.isTutorBlocked(studentId, tutor.getId());
         }
-
-        // ✅ REMOVED: No longer throwing error for unavailable courses
-        // Everyone can view course details
 
         return CourseDetail.builder()
                 .courseId(course.getId())
@@ -705,12 +634,16 @@ public class CourseService {
                 .build();
     }
 
+    // ============ GET SIMPLE AVAILABLE COURSES FOR STUDENT ============
+
     public List<StudentCourseCard> getSimpleAvailableCoursesForStudent(Long studentId) {
         List<Course> availableCourses = courseRepository.findByIsAvailableTrue();
         List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
         return availableCourses.stream()
+                // ✅ Filter INACTIVE tutors
+                .filter(course -> course.getTutorProfile().getUser().getAccountStatus() == AccountStatus.ACTIVE)
                 .filter(course -> !blockedTutorIds.contains(course.getTutorProfile().getId()))
                 .map(course -> {
                     Double avgRating = ratingRepository.getAverageRatingForCourse(course.getId());
