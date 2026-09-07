@@ -578,6 +578,13 @@ public class ConnectionService {
                 .build();
     }
 
+    // for chat
+    @Transactional(readOnly = true)
+    public TutorStudentConnection getConnectionById(Long connectionId) {
+        return connectionRepository.findById(connectionId)
+                .orElseThrow(() -> new RuntimeException("Connection not found"));
+    }
+
 
 
     // ============ HELPER METHODS ============
