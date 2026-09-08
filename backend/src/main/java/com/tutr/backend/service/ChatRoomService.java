@@ -27,12 +27,10 @@ public class ChatRoomService {
     public ChatRoom getOrCreateChatRoom(TutorStudentConnection connection) {
         log.debug("Getting or creating chat room for connection: {}", connection.getId());
 
-        // Validate connection is CONFIRMED
         if (connection.getStatus() != ConnectionStatus.CONFIRMED) {
             throw new RuntimeException("Chat is only available for confirmed connections");
         }
 
-        // Check if chat room exists
         return chatRoomRepository.findByConnectionId(connection.getId())
                 .orElseGet(() -> createChatRoom(connection));
     }
@@ -68,9 +66,9 @@ public class ChatRoomService {
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
     }
 
-    //  Convert to response with proper user names
+    // ✅ FIXED: Convert to response with proper unread count for current user
     @Transactional(readOnly = true)
-    public ChatRoomResponse convertToResponse(ChatRoom chatRoom) {
+    public ChatRoomResponse convertToResponse(ChatRoom chatRoom, Long currentUserId) {
         TutorStudentConnection conn = chatRoom.getConnection();
         StudentProfile student = conn.getStudent();
         TutorProfile tutor = conn.getTutor();
@@ -79,10 +77,13 @@ public class ChatRoomService {
         // Get last message
         Message lastMessage = messageRepository.findFirstByChatRoomOrderBySentAtDesc(chatRoom);
 
-        // Get unread count for current user (using student ID as default)
+        // ✅ FIXED: Get unread count for the CURRENT user (not always student)
         long unreadCount = 0;
-        if (student != null) {
-            unreadCount = messageRepository.countUnreadMessagesForRoom(chatRoom.getId(), student.getUser().getId());
+        if (currentUserId != null) {
+            unreadCount = messageRepository.countUnreadMessagesForRoom(
+                    chatRoom.getId(),
+                    currentUserId
+            );
         }
 
         return ChatRoomResponse.builder()
@@ -90,9 +91,11 @@ public class ChatRoomService {
                 .roomId(chatRoom.getRoomId())
                 .connectionId(conn.getId())
                 .studentId(student.getId())
+                .studentUserId(student.getUser().getId())
                 .studentName(student.getFirstName() + " " + student.getLastName())
                 .studentImage(student.getProfilePictureUrl())
                 .tutorId(tutor.getId())
+                .tutorUserId(tutor.getUser().getId())
                 .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
                 .tutorImage(tutor.getProfilePictureUrl())
                 .courseName(course.getSubject())

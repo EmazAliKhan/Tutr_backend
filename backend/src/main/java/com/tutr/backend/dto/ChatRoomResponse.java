@@ -13,11 +13,13 @@ public class ChatRoomResponse {
 
     // Student Info
     private Long studentId;
+    private Long studentUserId;
     private String studentName;
     private String studentImage;
 
     // Tutor Info
     private Long tutorId;
+    private Long tutorUserId;
     private String tutorName;
     private String tutorImage;
 
@@ -32,4 +34,6 @@ public class ChatRoomResponse {
 
     private boolean isActive;
     private LocalDateTime createdAt;
+
+
 }

@@ -10,22 +10,35 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final WebSocketHandshakeInterceptor handshakeInterceptor;
+
+    public WebSocketConfig(WebSocketHandshakeInterceptor handshakeInterceptor) {
+        this.handshakeInterceptor = handshakeInterceptor;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable simple broker for topic and queue destinations
-        config.enableSimpleBroker("/topic", "/queue");
-
-        // Prefix for messages from client to server
+        config.enableSimpleBroker("/topic", "/queue", "/user");
         config.setApplicationDestinationPrefixes("/app");
-
-        // Prefix for user-specific messages
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // ✅ Raw WebSocket endpoint (for Postman and Flutter)
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*")  // Configure properly in production
-                .withSockJS();
+                .setAllowedOriginPatterns("*")
+                .setAllowedOrigins("*")
+                .addInterceptors(handshakeInterceptor)
+                .withSockJS()
+                .setWebSocketEnabled(true);
+
+        // ✅ SockJS endpoint (for browsers with fallback)
+        registry.addEndpoint("/ws-sockjs")
+                .setAllowedOriginPatterns("*")
+                .setAllowedOrigins("*")
+                .addInterceptors(handshakeInterceptor)
+                .withSockJS()
+                .setWebSocketEnabled(true);
     }
 }

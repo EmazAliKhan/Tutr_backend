@@ -36,23 +36,19 @@ public class MessageService {
         log.info("Sending message from user {} to user {} in room {}",
                 request.getSenderId(), request.getRecipientId(), request.getChatRoomId());
 
-        // Validate chat room exists
         ChatRoom chatRoom = chatRoomRepository.findById(request.getChatRoomId())
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
 
-        // Validate chat room is active
         if (!chatRoom.isActive()) {
             throw new RuntimeException("Chat room is inactive");
         }
 
-        // Validate sender and recipient exist
         User sender = userRepository.findById(request.getSenderId())
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
 
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        // Create message
         Message message = Message.builder()
                 .chatRoom(chatRoom)
                 .sender(sender)
@@ -61,19 +57,18 @@ public class MessageService {
                 .messageType(MessageType.TEXT)
                 .sentAt(LocalDateTime.now())
                 .isRead(false)
+                .isDeletedForSender(false)
+                .isDeletedForRecipient(false)
                 .build();
 
         message = messageRepository.save(message);
 
-        // Update chat room last message time
         chatRoom.setLastMessageAt(LocalDateTime.now());
         chatRoomRepository.save(chatRoom);
 
         log.debug("Message sent successfully with ID: {}", message.getId());
 
         MessageResponse response = convertToResponse(message);
-
-        // Send real-time notification via WebSocket
         sendRealTimeNotification(response, recipient.getId());
 
         return response;
@@ -126,17 +121,14 @@ public class MessageService {
                 .orElseThrow(() -> new RuntimeException("Message not found"));
 
         if (message.getSender().getId().equals(userId)) {
-            message.setDeletedForSender(true);
+            messageRepository.deleteForSender(messageId);
         } else if (message.getRecipient().getId().equals(userId)) {
-            message.setDeletedForRecipient(true);
+            messageRepository.deleteForRecipient(messageId);
         } else {
             throw new RuntimeException("User not authorized to delete this message");
         }
-
-        messageRepository.save(message);
     }
 
-    //  Get user name from TutorProfile or StudentProfile
     private String getUserFullName(User user) {
         if (user.getRole() == Role.TUTOR) {
             return tutorProfileRepository.findByUser(user)
@@ -149,7 +141,6 @@ public class MessageService {
         }
     }
 
-    //  Get user image from TutorProfile or StudentProfile
     private String getUserImage(User user) {
         if (user.getRole() == Role.TUTOR) {
             return tutorProfileRepository.findByUser(user)
@@ -162,7 +153,6 @@ public class MessageService {
         }
     }
 
-    // ✅ FIXED: Convert message to response with correct user info
     private MessageResponse convertToResponse(Message message) {
         User sender = message.getSender();
         User recipient = message.getRecipient();
@@ -183,14 +173,12 @@ public class MessageService {
 
     private void sendRealTimeNotification(MessageResponse message, Long recipientId) {
         try {
-            // Send to recipient
             messagingTemplate.convertAndSendToUser(
                     recipientId.toString(),
                     "/queue/messages",
                     message
             );
 
-            // Also send to sender for confirmation
             messagingTemplate.convertAndSendToUser(
                     message.getSenderId().toString(),
                     "/queue/messages",
@@ -200,7 +188,6 @@ public class MessageService {
             log.debug("Real-time notification sent for message: {}", message.getId());
         } catch (Exception e) {
             log.error("Failed to send real-time notification: {}", e.getMessage());
-            // Don't throw, message is already saved in DB
         }
     }
 }

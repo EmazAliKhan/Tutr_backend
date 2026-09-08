@@ -21,11 +21,13 @@ public class ChatController {
 
     private final ChatFacade chatFacade;
 
-    // Get or create chat room for a connection
+    // ✅ Added userId parameter
     @GetMapping("/room/{connectionId}")
-    public ResponseEntity<?> getOrCreateChatRoom(@PathVariable Long connectionId) {
+    public ResponseEntity<?> getOrCreateChatRoom(
+            @PathVariable Long connectionId,
+            @RequestParam Long userId) {
         try {
-            ChatRoomResponse response = chatFacade.getOrCreateChatRoom(connectionId);
+            ChatRoomResponse response = chatFacade.getOrCreateChatRoom(connectionId, userId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.warn("Failed to get/create chat room: {}", e.getMessage());
@@ -33,7 +35,6 @@ public class ChatController {
         }
     }
 
-    // Get all chat rooms for a user
     @GetMapping("/rooms/{userId}")
     public ResponseEntity<?> getUserChatRooms(@PathVariable Long userId) {
         try {
@@ -45,7 +46,6 @@ public class ChatController {
         }
     }
 
-    // Send a message
     @PostMapping("/messages/send")
     public ResponseEntity<?> sendMessage(@Valid @RequestBody SendMessageRequest request) {
         try {
@@ -57,7 +57,6 @@ public class ChatController {
         }
     }
 
-    // Get messages for a chat room
     @GetMapping("/messages/{roomId}")
     public ResponseEntity<?> getMessages(
             @PathVariable Long roomId,
@@ -72,7 +71,6 @@ public class ChatController {
         }
     }
 
-    // Mark all messages as read in a room
     @PatchMapping("/rooms/{roomId}/read-all")
     public ResponseEntity<?> markAllAsRead(
             @PathVariable Long roomId,
@@ -86,7 +84,6 @@ public class ChatController {
         }
     }
 
-    // Get unread message count for a user
     @GetMapping("/unread-count/{userId}")
     public ResponseEntity<?> getUnreadCount(@PathVariable Long userId) {
         try {
@@ -98,7 +95,6 @@ public class ChatController {
         }
     }
 
-    // Delete a message for a user
     @DeleteMapping("/messages/{messageId}")
     public ResponseEntity<?> deleteMessage(
             @PathVariable Long messageId,
@@ -112,7 +108,6 @@ public class ChatController {
         }
     }
 
-    // Check if chat is available for a connection
     @GetMapping("/available/{connectionId}")
     public ResponseEntity<?> isChatAvailable(@PathVariable Long connectionId) {
         boolean isAvailable = chatFacade.isChatAvailable(connectionId);

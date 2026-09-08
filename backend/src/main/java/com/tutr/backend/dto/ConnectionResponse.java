@@ -16,11 +16,13 @@ public class ConnectionResponse {
 
     // Student info
     private Long studentId;
+    private Long studentUserId;
     private String studentName;
     private String studentImage;
 
     // Tutor info
     private Long tutorId;
+    private Long tutorUserId;
     private String tutorName;
     private String tutorImage;
     private String tutorHeadline;
