@@ -69,6 +69,7 @@ public class StudentTutorProfileService {
         // Build and return the complete profile
         return StudentTutorProfile.builder()
                 .tutorId(tutor.getId())
+                .tutorUserId(tutor.getUser().getId())
                 .tutorName(tutorFullName)
                 .tutorImage(tutor.getProfilePictureUrl())
                 .tutorHeadline(tutor.getHeadline())

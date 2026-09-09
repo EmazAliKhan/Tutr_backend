@@ -11,6 +11,7 @@ import java.util.List;
 public class StudentTutorProfile {
     // Tutor Info
     private Long tutorId;
+    private Long tutorUserId;
     private String tutorName;
     private String tutorImage;
     private String tutorHeadline;

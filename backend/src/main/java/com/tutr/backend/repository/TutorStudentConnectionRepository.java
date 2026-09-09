@@ -105,6 +105,48 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
             @Param("studentId") Long studentId,
             @Param("statuses") List<ConnectionStatus> statuses);
 
+
+
+    // ============ CHAT METHODS (NEW) ============
+
+    /**
+     * ✅ Check if ANY confirmed connection exists (PROFILE IDs)
+     */
+    @Query("SELECT COUNT(t) > 0 FROM TutorStudentConnection t " +
+            "WHERE t.student.id = :studentId " +
+            "AND t.tutor.id = :tutorId " +
+            "AND t.status = :status")
+    boolean existsByStudentIdAndTutorIdAndStatus(
+            @Param("studentId") Long studentId,
+            @Param("tutorId") Long tutorId,
+            @Param("status") ConnectionStatus status
+    );
+
+    /**
+     * ✅ Get ALL confirmed connections (PROFILE IDs)
+     */
+    @Query("SELECT t FROM TutorStudentConnection t " +
+            "WHERE t.student.id = :studentId " +
+            "AND t.tutor.id = :tutorId " +
+            "AND t.status = :status")
+    List<TutorStudentConnection> findAllByStudentIdAndTutorIdAndStatus(
+            @Param("studentId") Long studentId,
+            @Param("tutorId") Long tutorId,
+            @Param("status") ConnectionStatus status
+    );
+
+    /**
+     * ✅ Count confirmed connections (PROFILE IDs)
+     */
+    @Query("SELECT COUNT(t) FROM TutorStudentConnection t " +
+            "WHERE t.student.id = :studentId " +
+            "AND t.tutor.id = :tutorId " +
+            "AND t.status = :status")
+    long countByStudentIdAndTutorIdAndStatus(
+            @Param("studentId") Long studentId,
+            @Param("tutorId") Long tutorId,
+            @Param("status") ConnectionStatus status
+    );
 }
 
 

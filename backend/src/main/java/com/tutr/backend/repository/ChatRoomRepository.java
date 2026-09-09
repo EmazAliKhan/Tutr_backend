@@ -10,31 +10,23 @@ import java.util.Optional;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
-    Optional<ChatRoom> findByConnectionId(Long connectionId);
-
     Optional<ChatRoom> findByRoomId(String roomId);
 
-    // ✅ FIXED: Use user.id (USER ID), not profile id
-    @Query("SELECT DISTINCT c FROM ChatRoom c " +
-            "WHERE c.connection.student.user.id = :userId " +
-            "OR c.connection.tutor.user.id = :userId")
+    // ✅ Find room (active OR inactive) - for reuse
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr WHERE cr.studentUserId = :studentUserId AND cr.tutorUserId = :tutorUserId")
+    Optional<ChatRoom> findSharedChatRoom(
+            @Param("studentUserId") Long studentUserId,
+            @Param("tutorUserId") Long tutorUserId
+    );
+
+    // ✅ Find only active rooms (for inbox display)
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr WHERE (cr.studentUserId = :userId OR cr.tutorUserId = :userId) AND cr.isActive = true")
+    List<ChatRoom> findActiveByUserId(@Param("userId") Long userId);
+
+    // ✅ Find all rooms (active + inactive) for a user
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr WHERE cr.studentUserId = :userId OR cr.tutorUserId = :userId")
     List<ChatRoom> findByUserId(@Param("userId") Long userId);
 
-    // ✅ FIXED: Use user.id (USER ID)
-    @Query("SELECT DISTINCT c FROM ChatRoom c " +
-            "WHERE c.connection.student.user.id = :userId AND c.isActive = true")
-    List<ChatRoom> findActiveByStudentId(@Param("userId") Long userId);
-
-    // ✅ FIXED: Use user.id (USER ID)
-    @Query("SELECT DISTINCT c FROM ChatRoom c " +
-            "WHERE c.connection.tutor.user.id = :userId AND c.isActive = true")
-    List<ChatRoom> findActiveByTutorId(@Param("userId") Long userId);
-
-    boolean existsByConnectionId(Long connectionId);
-
-    // ✅ FIXED: Use user.id (USER ID)
-    @Query("SELECT COUNT(DISTINCT c) FROM ChatRoom c " +
-            "WHERE c.connection.student.user.id = :userId " +
-            "OR c.connection.tutor.user.id = :userId")
+    @Query("SELECT COUNT(cr) FROM ChatRoom cr WHERE cr.studentUserId = :userId OR cr.tutorUserId = :userId")
     long countByUserId(@Param("userId") Long userId);
 }

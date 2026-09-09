@@ -74,15 +74,17 @@ public class MessageService {
         return response;
     }
 
+    // ✅ FIXED: Added userId parameter
     @Transactional(readOnly = true)
-    public List<MessageResponse> getMessages(Long roomId, int page, int size) {
-        log.debug("Getting messages for room: {}, page: {}, size: {}", roomId, page, size);
+    public List<MessageResponse> getMessages(Long roomId, Long userId, int page, int size) {
+        log.debug("Getting messages for room: {}, user: {}, page: {}, size: {}", roomId, userId, page, size);
 
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
 
+        // ✅ Use findMessagesForUser with userId
         List<Message> messages = messageRepository
-                .findByChatRoomOrderBySentAtDesc(chatRoom, PageRequest.of(page, size));
+                .findMessagesForUser(chatRoom, userId, PageRequest.of(page, size));
 
         return messages.stream()
                 .map(this::convertToResponse)

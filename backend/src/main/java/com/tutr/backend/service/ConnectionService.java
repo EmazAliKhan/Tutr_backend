@@ -4,6 +4,7 @@ import com.tutr.backend.dto.*;
 import com.tutr.backend.model.*;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConnectionService {
@@ -578,13 +580,67 @@ public class ConnectionService {
                 .build();
     }
 
-    // for chat
+    // ============ CHAT METHODS (NEW) ============
+
+    /**
+     * ✅ Get profile ID from user ID
+     */
     @Transactional(readOnly = true)
-    public TutorStudentConnection getConnectionById(Long connectionId) {
-        return connectionRepository.findById(connectionId)
-                .orElseThrow(() -> new RuntimeException("Connection not found"));
+    public Long getStudentProfileId(Long studentUserId) {
+        StudentProfile student = studentRepository.findByUserId(studentUserId)
+                .orElseThrow(() -> new RuntimeException("Student not found for user ID: " + studentUserId));
+        return student.getId();
     }
 
+    @Transactional(readOnly = true)
+    public Long getTutorProfileId(Long tutorUserId) {
+        TutorProfile tutor = tutorRepository.findByUserId(tutorUserId)
+                .orElseThrow(() -> new RuntimeException("Tutor not found for user ID: " + tutorUserId));
+        return tutor.getId();
+    }
+
+    /**
+     * ✅ Check if there is ANY confirmed connection between student and tutor
+     * Uses USER IDs, converts internally to PROFILE IDs
+     */
+    @Transactional(readOnly = true)
+    public boolean hasConfirmedConnection(Long studentUserId, Long tutorUserId) {
+        log.debug("Checking confirmed connection between student: {} and tutor: {}", studentUserId, tutorUserId);
+
+        try {
+            // ✅ Convert USER IDs to PROFILE IDs
+            Long studentProfileId = getStudentProfileId(studentUserId);
+            Long tutorProfileId = getTutorProfileId(tutorUserId);
+
+            return connectionRepository.existsByStudentIdAndTutorIdAndStatus(
+                    studentProfileId,
+                    tutorProfileId,
+                    ConnectionStatus.CONFIRMED
+            );
+        } catch (Exception e) {
+            log.warn("Error checking connection: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ✅ Get count of confirmed connections
+     */
+    @Transactional(readOnly = true)
+    public long getConfirmedConnectionCount(Long studentUserId, Long tutorUserId) {
+        try {
+            Long studentProfileId = getStudentProfileId(studentUserId);
+            Long tutorProfileId = getTutorProfileId(tutorUserId);
+
+            return connectionRepository.countByStudentIdAndTutorIdAndStatus(
+                    studentProfileId,
+                    tutorProfileId,
+                    ConnectionStatus.CONFIRMED
+            );
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 
 
     // ============ HELPER METHODS ============

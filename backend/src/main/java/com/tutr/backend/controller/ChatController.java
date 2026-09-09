@@ -7,6 +7,7 @@ import com.tutr.backend.facade.ChatFacade;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,20 +22,28 @@ public class ChatController {
 
     private final ChatFacade chatFacade;
 
-    // ✅ Added userId parameter
-    @GetMapping("/room/{connectionId}")
-    public ResponseEntity<?> getOrCreateChatRoom(
-            @PathVariable Long connectionId,
+    // ✅ Get or create SHARED chat room (all parameters are USER IDs)
+    @GetMapping("/shared-room")
+    public ResponseEntity<?> getOrCreateSharedChatRoom(
+            @RequestParam Long studentId,
+            @RequestParam Long tutorId,
             @RequestParam Long userId) {
         try {
-            ChatRoomResponse response = chatFacade.getOrCreateChatRoom(connectionId, userId);
+            ChatRoomResponse response = chatFacade.getOrCreateSharedChatRoom(studentId, tutorId, userId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.warn("Failed to get/create chat room: {}", e.getMessage());
+            log.warn("Failed to get/create shared chat room: {}", e.getMessage());
+
+            if (e.getMessage().contains("User is not part of this chat room") ||
+                    e.getMessage().contains("confirmed connection")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            }
+
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
+    // ✅ Get user chat rooms (USER ID)
     @GetMapping("/rooms/{userId}")
     public ResponseEntity<?> getUserChatRooms(@PathVariable Long userId) {
         try {
@@ -46,6 +55,7 @@ public class ChatController {
         }
     }
 
+    // ✅ Send message
     @PostMapping("/messages/send")
     public ResponseEntity<?> sendMessage(@Valid @RequestBody SendMessageRequest request) {
         try {
@@ -53,24 +63,39 @@ public class ChatController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.warn("Failed to send message: {}", e.getMessage());
+
+            if (e.getMessage().contains("User is not part of this chat room") ||
+                    e.getMessage().contains("confirmed connection")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            }
+
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
+    // ✅ Get messages
     @GetMapping("/messages/{roomId}")
     public ResponseEntity<?> getMessages(
             @PathVariable Long roomId,
+            @RequestParam Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         try {
-            List<MessageResponse> messages = chatFacade.getMessages(roomId, page, size);
+            List<MessageResponse> messages = chatFacade.getMessages(roomId, userId, page, size);
             return ResponseEntity.ok(messages);
         } catch (RuntimeException e) {
             log.warn("Failed to get messages: {}", e.getMessage());
+
+            if (e.getMessage().contains("User is not part of this chat room") ||
+                    e.getMessage().contains("confirmed connection")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            }
+
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
+    // ✅ Mark all as read
     @PatchMapping("/rooms/{roomId}/read-all")
     public ResponseEntity<?> markAllAsRead(
             @PathVariable Long roomId,
@@ -84,6 +109,7 @@ public class ChatController {
         }
     }
 
+    // ✅ Get unread count
     @GetMapping("/unread-count/{userId}")
     public ResponseEntity<?> getUnreadCount(@PathVariable Long userId) {
         try {
@@ -95,6 +121,7 @@ public class ChatController {
         }
     }
 
+    // ✅ Delete message
     @DeleteMapping("/messages/{messageId}")
     public ResponseEntity<?> deleteMessage(
             @PathVariable Long messageId,
@@ -106,11 +133,5 @@ public class ChatController {
             log.warn("Failed to delete message: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-    }
-
-    @GetMapping("/available/{connectionId}")
-    public ResponseEntity<?> isChatAvailable(@PathVariable Long connectionId) {
-        boolean isAvailable = chatFacade.isChatAvailable(connectionId);
-        return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
     }
 }

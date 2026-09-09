@@ -13,19 +13,61 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
+    // ✅ ALL messages for chat (returns List - OK)
+    @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom " +
+            "AND m.isDeletedForSender = false AND m.isDeletedForRecipient = false " +
+            "ORDER BY m.sentAt DESC")
     List<Message> findByChatRoomOrderBySentAtDesc(ChatRoom chatRoom, Pageable pageable);
 
-    Message findFirstByChatRoomOrderBySentAtDesc(ChatRoom chatRoom);
+    // ✅ FIXED: ONLY latest message (returns single Message)
+    // Spring Data JPA automatically adds LIMIT 1
+    Message findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(
+            ChatRoom chatRoom
+    );
 
-    @Query("SELECT COUNT(m) FROM Message m WHERE m.chatRoom.id = :roomId AND m.recipient.id = :userId AND m.isRead = false")
-    long countUnreadMessagesForRoom(@Param("roomId") Long roomId, @Param("userId") Long userId);
+    // ✅ For user-specific messages (returns List - OK)
+    @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom " +
+            "AND ((m.sender.id = :userId AND m.isDeletedForSender = false) " +
+            "OR (m.recipient.id = :userId AND m.isDeletedForRecipient = false)) " +
+            "ORDER BY m.sentAt DESC")
+    List<Message> findMessagesForUser(
+            @Param("chatRoom") ChatRoom chatRoom,
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
 
-    @Query("SELECT COUNT(m) FROM Message m WHERE m.recipient.id = :userId AND m.isRead = false")
+    // ✅ FIXED: ONLY latest message for user (returns single Message)
+    @Query(value = "SELECT m.* FROM messages m " +
+            "WHERE m.chat_room_id = :chatRoomId " +
+            "AND ((m.sender_id = :userId AND m.is_deleted_for_sender = false) " +
+            "OR (m.recipient_id = :userId AND m.is_deleted_for_recipient = false)) " +
+            "ORDER BY m.sent_at DESC " +
+            "LIMIT 1",
+            nativeQuery = true)
+    Message findFirstByChatRoomOrderBySentAtDescForUserNative(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("userId") Long userId
+    );
+
+    // ✅ Count unread messages
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.chatRoom.id = :roomId " +
+            "AND m.recipient.id = :userId AND m.isRead = false " +
+            "AND m.isDeletedForRecipient = false")
+    long countUnreadMessagesForRoom(
+            @Param("roomId") Long roomId,
+            @Param("userId") Long userId
+    );
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.recipient.id = :userId " +
+            "AND m.isRead = false " +
+            "AND m.isDeletedForRecipient = false")
     long countTotalUnreadMessages(@Param("userId") Long userId);
 
     @Modifying
     @Transactional
-    @Query("UPDATE Message m SET m.isRead = true, m.readAt = CURRENT_TIMESTAMP WHERE m.chatRoom.id = :roomId AND m.recipient.id = :userId")
+    @Query("UPDATE Message m SET m.isRead = true, m.readAt = CURRENT_TIMESTAMP " +
+            "WHERE m.chatRoom.id = :roomId AND m.recipient.id = :userId " +
+            "AND m.isDeletedForRecipient = false")
     void markAllAsRead(@Param("roomId") Long roomId, @Param("userId") Long userId);
 
     @Modifying

@@ -1,9 +1,14 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.ChatRoomResponse;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.ChatRoom;
+import com.tutr.backend.model.Message;
+import com.tutr.backend.model.StudentProfile;
+import com.tutr.backend.model.TutorProfile;
 import com.tutr.backend.repository.ChatRoomRepository;
 import com.tutr.backend.repository.MessageRepository;
+import com.tutr.backend.repository.StudentProfileRepository;
+import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.util.ChatRoomIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -22,31 +27,38 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final MessageRepository messageRepository;
     private final ChatRoomIdGenerator roomIdGenerator;
+    private final StudentProfileRepository studentProfileRepository;
+    private final TutorProfileRepository tutorProfileRepository;
 
+    // ✅ Get or create SHARED chat room (REUSE existing room)
     @Transactional
-    public ChatRoom getOrCreateChatRoom(TutorStudentConnection connection) {
-        log.debug("Getting or creating chat room for connection: {}", connection.getId());
+    public ChatRoom getOrCreateSharedChatRoom(Long studentUserId, Long tutorUserId) {
+        log.info("Getting/Creating shared chat room for student: {}, tutor: {}", studentUserId, tutorUserId);
 
-        if (connection.getStatus() != ConnectionStatus.CONFIRMED) {
-            throw new RuntimeException("Chat is only available for confirmed connections");
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findSharedChatRoom(studentUserId, tutorUserId);
+
+        if (existingRoom.isPresent()) {
+            ChatRoom room = existingRoom.get();
+
+            if (!room.isActive()) {
+                log.info("Reactivating existing chat room: {}", room.getId());
+                room.setActive(true);
+                room.setLastMessageAt(LocalDateTime.now());
+                return chatRoomRepository.save(room);
+            }
+
+            log.info("Found existing active chat room: {}", room.getId());
+            return room;
         }
 
-        return chatRoomRepository.findByConnectionId(connection.getId())
-                .orElseGet(() -> createChatRoom(connection));
-    }
+        log.info("Creating new shared chat room for student: {}, tutor: {}", studentUserId, tutorUserId);
 
-    private ChatRoom createChatRoom(TutorStudentConnection connection) {
-        log.info("Creating new chat room for connection: {}", connection.getId());
-
-        String roomId = roomIdGenerator.generateRoomId(
-                connection.getStudent().getId(),
-                connection.getTutor().getId(),
-                connection.getCourse().getId()
-        );
+        String roomId = roomIdGenerator.generateSharedRoomId(studentUserId, tutorUserId);
 
         ChatRoom chatRoom = ChatRoom.builder()
-                .connection(connection)
                 .roomId(roomId)
+                .studentUserId(studentUserId)
+                .tutorUserId(tutorUserId)
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .lastMessageAt(LocalDateTime.now())
@@ -55,29 +67,49 @@ public class ChatRoomService {
         return chatRoomRepository.save(chatRoom);
     }
 
+    // ✅ Get user chat rooms
     @Transactional(readOnly = true)
     public List<ChatRoom> getUserChatRooms(Long userId) {
         log.debug("Getting chat rooms for user: {}", userId);
         return chatRoomRepository.findByUserId(userId);
     }
 
+    // ✅ Get chat room by ID
     public ChatRoom getChatRoomById(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
     }
 
-    // ✅ FIXED: Convert to response with proper unread count for current user
+    // ✅ Convert to response with student and tutor details
     @Transactional(readOnly = true)
     public ChatRoomResponse convertToResponse(ChatRoom chatRoom, Long currentUserId) {
-        TutorStudentConnection conn = chatRoom.getConnection();
-        StudentProfile student = conn.getStudent();
-        TutorProfile tutor = conn.getTutor();
-        Course course = conn.getCourse();
+
+        // ✅ Fetch student and tutor details
+        String studentName = "Student";
+        String tutorName = "Tutor";
+        String studentImage = null;
+        String tutorImage = null;
+
+        // ✅ Get student details by USER ID
+        Optional<StudentProfile> studentOpt = studentProfileRepository.findByUserId(chatRoom.getStudentUserId());
+        if (studentOpt.isPresent()) {
+            StudentProfile student = studentOpt.get();
+            studentName = student.getFirstName() + " " + student.getLastName();
+            studentImage = student.getProfilePictureUrl();
+        }
+
+        // ✅ Get tutor details by USER ID
+        Optional<TutorProfile> tutorOpt = tutorProfileRepository.findByUserId(chatRoom.getTutorUserId());
+        if (tutorOpt.isPresent()) {
+            TutorProfile tutor = tutorOpt.get();
+            tutorName = tutor.getFirstName() + " " + tutor.getLastName();
+            tutorImage = tutor.getProfilePictureUrl();
+        }
 
         // Get last message
-        Message lastMessage = messageRepository.findFirstByChatRoomOrderBySentAtDesc(chatRoom);
-
-        // ✅ FIXED: Get unread count for the CURRENT user (not always student)
+        Message lastMessage = messageRepository
+                .findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(chatRoom);
+        // Get unread count for current user
         long unreadCount = 0;
         if (currentUserId != null) {
             unreadCount = messageRepository.countUnreadMessagesForRoom(
@@ -89,22 +121,33 @@ public class ChatRoomService {
         return ChatRoomResponse.builder()
                 .id(chatRoom.getId())
                 .roomId(chatRoom.getRoomId())
-                .connectionId(conn.getId())
-                .studentId(student.getId())
-                .studentUserId(student.getUser().getId())
-                .studentName(student.getFirstName() + " " + student.getLastName())
-                .studentImage(student.getProfilePictureUrl())
-                .tutorId(tutor.getId())
-                .tutorUserId(tutor.getUser().getId())
-                .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
-                .tutorImage(tutor.getProfilePictureUrl())
-                .courseName(course.getSubject())
-                .courseSubject(course.getSubject())
+                .connectionId(null)
+                .studentUserId(chatRoom.getStudentUserId())
+                .tutorUserId(chatRoom.getTutorUserId())
+                .studentName(studentName)
+                .studentImage(studentImage)
+                .tutorName(tutorName)
+                .tutorImage(tutorImage)
+                .courseName("General")
+                .courseSubject("General")
                 .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
                 .lastMessageAt(chatRoom.getLastMessageAt())
                 .unreadCount(unreadCount)
                 .isActive(chatRoom.isActive())
                 .createdAt(chatRoom.getCreatedAt())
                 .build();
+    }
+
+    // Optional: Deactivate room when all connections are disconnected
+    @Transactional
+    public void deactivateChatRoom(Long studentUserId, Long tutorUserId) {
+        log.info("Deactivating chat room for student: {}, tutor: {}", studentUserId, tutorUserId);
+
+        chatRoomRepository.findSharedChatRoom(studentUserId, tutorUserId)
+                .ifPresent(room -> {
+                    room.setActive(false);
+                    chatRoomRepository.save(room);
+                    log.info("Chat room {} deactivated", room.getId());
+                });
     }
 }

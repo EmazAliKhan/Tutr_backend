@@ -18,12 +18,14 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "connection_id", nullable = false, unique = true)
-    private TutorStudentConnection connection;
-
     @Column(unique = true, nullable = false)
     private String roomId;
+
+    @Column(name = "student_user_id", nullable = false)
+    private Long studentUserId;
+
+    @Column(name = "tutor_user_id", nullable = false)
+    private Long tutorUserId;
 
     @Column(nullable = false)
     @Builder.Default
