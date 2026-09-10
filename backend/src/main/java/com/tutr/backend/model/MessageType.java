@@ -4,5 +4,6 @@ public enum MessageType {
     TEXT,
     AUDIO,
     IMAGE,
-    SYSTEM
+    DOCUMENT,
+    FILE
 }

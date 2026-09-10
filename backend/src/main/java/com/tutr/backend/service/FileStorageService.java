@@ -162,4 +162,31 @@ public class FileStorageService {
         return "/uploads/audio/" + filename;
     }
 
+    public String storeChatFile(MultipartFile file, Long userId) throws IOException {
+        String projectRoot = System.getProperty("user.dir");
+        String fullPath = projectRoot + "\\" + baseUploadDir + "\\chat-files";
+
+        Path uploadPath = Paths.get(fullPath);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "file_user_" + userId + "_" + timestamp + "_" +
+                UUID.randomUUID().toString() + fileExtension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath);
+
+        System.out.println("Chat file saved: " + filePath.toAbsolutePath());
+
+        return "/uploads/chat-files/" + filename;
+    }
+
 }

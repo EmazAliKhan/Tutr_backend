@@ -164,4 +164,48 @@ public class ChatController {
                     .body(Map.of("error", "Upload failed: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/upload/file")
+    public ResponseEntity<?> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("userId") Long userId) {
+        try {
+            log.info("Uploading file for user: {}, name: {}",
+                    userId, file.getOriginalFilename());
+
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "File is empty"));
+            }
+
+            // Validate size (max 20MB)
+            if (file.getSize() > 20 * 1024 * 1024) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "File must be less than 20MB"));
+            }
+
+            String fileUrl = fileStorageService.storeChatFile(file, userId);
+
+            // Determine file type from extension
+            String originalName = file.getOriginalFilename();
+            String fileType = "file";
+            if (originalName != null && originalName.contains(".")) {
+                fileType = originalName.substring(originalName.lastIndexOf(".") + 1).toLowerCase();
+            }
+
+            log.info("File uploaded: {}", fileUrl);
+
+            return ResponseEntity.ok(Map.of(
+                    "fileUrl", fileUrl,
+                    "fileName", originalName != null ? originalName : "file",
+                    "fileSize", file.getSize(),
+                    "fileType", fileType,
+                    "message", "Upload successful"
+            ));
+        } catch (Exception e) {
+            log.error("Upload failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Upload failed: " + e.getMessage()));
+        }
+    }
 }

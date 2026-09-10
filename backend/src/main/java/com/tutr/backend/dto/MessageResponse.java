@@ -20,4 +20,8 @@ public class MessageResponse {
     private boolean isOwn;
     private String audioUrl;
     private Integer audioDuration;
+    private String fileUrl;
+    private String fileName;
+    private Long fileSize;
+    private String fileType;
 }

@@ -49,9 +49,22 @@ public class MessageService {
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        MessageType messageType = (request.getAudioUrl() != null && !request.getAudioUrl().isEmpty())
-                ? MessageType.AUDIO
-                : MessageType.TEXT;
+        MessageType messageType = MessageType.TEXT;
+        if (request.getAudioUrl() != null && !request.getAudioUrl().isEmpty()) {
+            messageType = MessageType.AUDIO;
+        } else if (request.getFileUrl() != null && !request.getFileUrl().isEmpty()) {
+            String fileType = request.getFileType();
+            if (fileType != null && (
+                    fileType.equalsIgnoreCase("jpg") ||
+                            fileType.equalsIgnoreCase("jpeg") ||
+                            fileType.equalsIgnoreCase("png") ||
+                            fileType.equalsIgnoreCase("gif") ||
+                            fileType.equalsIgnoreCase("webp"))) {
+                messageType = MessageType.IMAGE;
+            } else {
+                messageType = MessageType.DOCUMENT;
+            }
+        }
 
         Message message = Message.builder()
                 .chatRoom(chatRoom)
@@ -61,6 +74,10 @@ public class MessageService {
                 .messageType(messageType)
                 .audioUrl(request.getAudioUrl())
                 .audioDuration(request.getAudioDuration())
+                .fileUrl(request.getFileUrl())
+                .fileName(request.getFileName())
+                .fileSize(request.getFileSize())
+                .fileType(request.getFileType())
                 .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .isDeletedForSender(false)
@@ -178,6 +195,10 @@ public class MessageService {
                 .isRead(message.isRead())
                 .audioUrl(message.getAudioUrl())
                 .audioDuration(message.getAudioDuration())
+                .fileUrl(message.getFileUrl())
+                .fileName(message.getFileName())
+                .fileSize(message.getFileSize())
+                .fileType(message.getFileType())
                 .build();
     }
 
