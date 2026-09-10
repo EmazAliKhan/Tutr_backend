@@ -78,6 +78,7 @@ public class MessageService {
                 .fileName(request.getFileName())
                 .fileSize(request.getFileSize())
                 .fileType(request.getFileType())
+                .replyToMessageId(request.getReplyToMessageId())
                 .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .isDeletedForSender(false)
@@ -182,6 +183,33 @@ public class MessageService {
         User sender = message.getSender();
         User recipient = message.getRecipient();
 
+        // ✅ Fetch reply parent info if exists
+        Long replyToId = message.getReplyToMessageId();
+        String replyToContent = null;
+        String replyToSenderName = null;
+        String replyToMessageType = null;
+
+        if (replyToId != null) {
+            Message parentMessage = messageRepository.findById(replyToId).orElse(null);
+            if (parentMessage != null) {
+                replyToContent = parentMessage.getContent();
+                replyToSenderName = getUserFullName(parentMessage.getSender());
+                replyToMessageType = parentMessage.getMessageType().toString();
+
+                // If parent was audio/file, show a preview text instead
+                if ("AUDIO".equals(replyToMessageType)) {
+                    replyToContent = " Audio message";
+                } else if ("IMAGE".equals(replyToMessageType)) {
+                    replyToContent = "Image";
+                } else if ("DOCUMENT".equals(replyToMessageType)
+                        || "FILE".equals(replyToMessageType)) {
+                    replyToContent = " " + (parentMessage.getFileName() != null
+                            ? parentMessage.getFileName()
+                            : "File");
+                }
+            }
+        }
+
         return MessageResponse.builder()
                 .id(message.getId())
                 .chatRoomId(message.getChatRoom().getId())
@@ -199,6 +227,10 @@ public class MessageService {
                 .fileName(message.getFileName())
                 .fileSize(message.getFileSize())
                 .fileType(message.getFileType())
+                .replyToMessageId(replyToId)
+                .replyToContent(replyToContent)
+                .replyToSenderName(replyToSenderName)
+                .replyToMessageType(replyToMessageType)
                 .build();
     }
 

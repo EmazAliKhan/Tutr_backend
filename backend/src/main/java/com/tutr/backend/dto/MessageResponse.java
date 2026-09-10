@@ -24,4 +24,8 @@ public class MessageResponse {
     private String fileName;
     private Long fileSize;
     private String fileType;
+    private Long replyToMessageId;
+    private String replyToContent;
+    private String replyToSenderName;
+    private String replyToMessageType;
 }

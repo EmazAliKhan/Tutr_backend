@@ -50,6 +50,9 @@ public class Message {
     @Column(name = "file_type")
     private String fileType;
 
+    @Column(name = "reply_to_message_id")
+    private Long replyToMessageId;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private MessageType messageType = MessageType.TEXT;
