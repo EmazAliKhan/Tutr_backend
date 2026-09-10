@@ -49,12 +49,18 @@ public class MessageService {
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
+        MessageType messageType = (request.getAudioUrl() != null && !request.getAudioUrl().isEmpty())
+                ? MessageType.AUDIO
+                : MessageType.TEXT;
+
         Message message = Message.builder()
                 .chatRoom(chatRoom)
                 .sender(sender)
                 .recipient(recipient)
                 .content(request.getContent())
-                .messageType(MessageType.TEXT)
+                .messageType(messageType)
+                .audioUrl(request.getAudioUrl())
+                .audioDuration(request.getAudioDuration())
                 .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .isDeletedForSender(false)
@@ -170,6 +176,8 @@ public class MessageService {
                 .messageType(message.getMessageType().toString())
                 .sentAt(message.getSentAt())
                 .isRead(message.isRead())
+                .audioUrl(message.getAudioUrl())
+                .audioDuration(message.getAudioDuration())
                 .build();
     }
 

@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.tutr.backend.service.FileStorageService;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatFacade chatFacade;
+    private final FileStorageService fileStorageService;
 
     // ✅ Get or create SHARED chat room (all parameters are USER IDs)
     @GetMapping("/shared-room")
@@ -132,6 +135,33 @@ public class ChatController {
         } catch (RuntimeException e) {
             log.warn("Failed to delete message: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/upload/audio")
+    public ResponseEntity<?> uploadAudio(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("userId") Long userId) {
+        try {
+            log.info("Uploading audio file for user: {}", userId);
+
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "File is empty"));
+            }
+
+            String audioUrl = fileStorageService.storeAudioFile(file, userId);
+
+            log.info("Audio uploaded: {}", audioUrl);
+
+            return ResponseEntity.ok(Map.of(
+                    "audioUrl", audioUrl,
+                    "message", "Upload successful"
+            ));
+        } catch (Exception e) {
+            log.error("Upload failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Upload failed: " + e.getMessage()));
         }
     }
 }

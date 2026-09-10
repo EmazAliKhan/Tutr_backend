@@ -130,4 +130,36 @@ public class FileStorageService {
         }
     }
 
+
+
+    /**
+     * ✅ NEW: Store audio file for chat messages
+     */
+    public String storeAudioFile(MultipartFile file, Long userId) throws IOException {
+        String projectRoot = System.getProperty("user.dir");
+        String fullPath = projectRoot + "\\" + baseUploadDir + "\\audio";
+
+        Path uploadPath = Paths.get(fullPath);
+
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = ".aac";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "audio_user_" + userId + "_" + timestamp + "_" + UUID.randomUUID().toString() + fileExtension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath);
+
+        System.out.println("Audio file saved to: " + filePath.toAbsolutePath());
+
+        return "/uploads/audio/" + filename;
+    }
+
 }

@@ -31,6 +31,12 @@ public class Message {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "audio_url", length = 500)
+    private String audioUrl;
+
+    @Column(name = "audio_duration")
+    private Integer audioDuration;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private MessageType messageType = MessageType.TEXT;

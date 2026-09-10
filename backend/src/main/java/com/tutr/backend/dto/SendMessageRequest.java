@@ -18,4 +18,7 @@ public class SendMessageRequest {
 
     @NotBlank(message = "Message content cannot be empty")
     private String content;
+
+    private String audioUrl;
+    private Integer audioDuration;
 }
