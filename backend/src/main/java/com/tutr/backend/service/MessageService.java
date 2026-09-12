@@ -127,11 +127,11 @@ public class MessageService {
         messageRepository.save(message);
     }
 
-    @Transactional
-    public void markAllAsRead(Long roomId, Long userId) {
-        log.debug("Marking all messages as read in room: {} for user: {}", roomId, userId);
-        messageRepository.markAllAsRead(roomId, userId);
-    }
+        @Transactional
+        public void markAllAsRead(Long roomId, Long userId) {
+            log.debug("Marking all messages as read in room: {} for user: {}", roomId, userId);
+            messageRepository.markAllAsRead(roomId, userId);
+        }
 
     @Transactional(readOnly = true)
     public long getUnreadCount(Long userId) {
