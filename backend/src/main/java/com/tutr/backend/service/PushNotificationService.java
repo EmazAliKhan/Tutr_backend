@@ -19,6 +19,7 @@ import java.util.Optional;
 public class PushNotificationService {
 
     private final DeviceTokenRepository tokenRepo;
+    private final NotificationService notificationService;
 
     // ------------------------------------------------------------
     // TOKEN MANAGEMENT
@@ -55,11 +56,29 @@ public class PushNotificationService {
                            String title,
                            String body,
                            Map<String, String> data) {
+        // ✅ Save to notification history FIRST (before checking tokens)
+        try {
+            String type = data.getOrDefault("type", "general");
+            Long referenceId = parseLong(data.get("chatRoomId"));
+            Long senderId = parseLong(data.get("senderId"));
+            String senderName = data.get("senderName");
+            String senderImage = data.get("senderImage");
+
+            notificationService.save(
+                    userId, type, title, body,
+                    referenceId, senderId, senderName, senderImage
+            );
+        } catch (Exception e) {
+            log.warn("Failed to save notification history: {}", e.getMessage());
+        }
+
         List<DeviceToken> tokens = tokenRepo.findByUserId(userId);
         if (tokens.isEmpty()) {
-            log.info("No device tokens for user {}", userId);
+            log.info("No device tokens for user {} — saved to history only", userId);
             return;
         }
+
+
 
         List<String> tokenStrings = tokens.stream()
                 .map(DeviceToken::getToken)
@@ -130,6 +149,16 @@ public class PushNotificationService {
             );
         } catch (Exception e) {
             log.warn("Async push failed: {}", e.getMessage());
+        }
+    }
+
+    //======Helper method=========
+    private Long parseLong(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }
