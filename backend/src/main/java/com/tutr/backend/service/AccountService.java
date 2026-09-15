@@ -15,9 +15,8 @@ public class AccountService {
     private final TutorProfileRepository tutorProfileRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final TutorStudentConnectionRepository connectionRepository;
-    private final CourseRepository courseRepository;
 
-    // ============ TUTOR METHODS (Existing) ============
+    // ============ TUTOR METHODS ============
 
     @Transactional
     public void deactivateTutorAccount(Long tutorId) {
@@ -34,7 +33,6 @@ public class AccountService {
             throw new RuntimeException("Only tutor accounts can be deactivated");
         }
 
-        // Check for active connections
         List<TutorStudentConnection> activeConnections = connectionRepository
                 .findByTutorIdAndStatusIn(tutorId,
                         List.of(ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING, ConnectionStatus.CONFIRMED));
@@ -46,12 +44,8 @@ public class AccountService {
         user.setAccountStatus(AccountStatus.INACTIVE);
         userRepository.save(user);
 
-        // Deactivate all courses
-        List<Course> courses = courseRepository.findByTutorProfileId(tutorId);
-        for (Course course : courses) {
-            course.setIsAvailable(false);
-            courseRepository.save(course);
-        }
+        // ✅ Courses are NOT touched. isAvailable is a per-course decision.
+        // Students still won't see them because CourseService filters by tutor status.
     }
 
     @Transactional
@@ -68,15 +62,10 @@ public class AccountService {
         user.setAccountStatus(AccountStatus.ACTIVE);
         userRepository.save(user);
 
-        // Reactivate all courses
-        List<Course> courses = courseRepository.findByTutorProfileId(tutorId);
-        for (Course course : courses) {
-            course.setIsAvailable(true);
-            courseRepository.save(course);
-        }
+        // ✅ Nothing to restore — course availability was never changed.
     }
 
-    // ============ STUDENT METHODS (NEW) ============
+    // ============ STUDENT METHODS ============
 
     @Transactional
     public void deactivateStudentAccount(Long studentId) {
@@ -93,7 +82,6 @@ public class AccountService {
             throw new RuntimeException("Only student accounts can be deactivated");
         }
 
-        // ✅ Check for active connections (PENDING, NEGOTIATING, CONFIRMED)
         List<TutorStudentConnection> activeConnections = connectionRepository
                 .findByStudentIdAndStatusIn(studentId,
                         List.of(ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING, ConnectionStatus.CONFIRMED));
@@ -102,7 +90,6 @@ public class AccountService {
             throw new RuntimeException("Cannot deactivate. You have active connections.");
         }
 
-        // ✅ Deactivate the student account
         user.setAccountStatus(AccountStatus.INACTIVE);
         userRepository.save(user);
 

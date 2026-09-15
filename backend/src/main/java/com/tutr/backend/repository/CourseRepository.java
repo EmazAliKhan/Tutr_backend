@@ -43,7 +43,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "FROM Course c " +
             "LEFT JOIN RatingReview r ON c.id = r.course.id " +
             "WHERE c.isAvailable = true " +
-            "AND (:location IS NULL OR LOWER(c.location) LIKE LOWER(CONCAT('%', :location, '%'))) " +
+            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.AccountStatus.ACTIVE " +
+            "AND (:location IS NULL OR LOCATE(LOWER(:location), LOWER(c.location)) > 0) " +
             "GROUP BY c.id " +
             "ORDER BY avgRating DESC NULLS LAST, c.createdAt DESC")
     List<Object[]> findRecommendedCourses(@Param("location") String location);
@@ -53,6 +54,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "FROM Course c " +
             "LEFT JOIN RatingReview r ON c.id = r.course.id " +
             "WHERE c.isAvailable = true " +
+            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.AccountStatus.ACTIVE " +
             "GROUP BY c.id " +
             "HAVING AVG(r.rating) >= 4.0 OR COUNT(r) = 0 " +
             "ORDER BY avgRating DESC, c.createdAt DESC")

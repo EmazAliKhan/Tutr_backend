@@ -26,7 +26,7 @@ public class User {
     @Column(nullable = false)
     private boolean emailVerified = false;
 
-    @Column(name = "welcome_notification_sent")
+    @Column(name = "welcome_notification_sent", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     @Builder.Default
     private boolean welcomeNotificationSent = false;
 

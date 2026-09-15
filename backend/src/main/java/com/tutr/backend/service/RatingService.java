@@ -271,7 +271,6 @@ public class RatingService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
-
         List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
 
         String studentLocation = student.getLocation();
@@ -280,7 +279,6 @@ public class RatingService {
         List<Object[]> results = courseRepository.findRecommendedCourses(studentLocation);
 
         if (results == null || results.isEmpty()) {
-            System.out.println("No location matches found. Falling back to top rated courses.");
             results = courseRepository.findTopRatedCourses();
         }
 
@@ -291,7 +289,18 @@ public class RatingService {
             if (rank > limit) break;
 
             Course course = (Course) row[0];
-            Double avgRating = (Double) row[1];
+
+            // ✅ Safe cast — AVG() may return Double, BigDecimal, Long, or null
+            Double avgRating = 0.0;
+            if (row[1] != null) {
+                if (row[1] instanceof BigDecimal) {
+                    avgRating = ((BigDecimal) row[1]).doubleValue();
+                } else if (row[1] instanceof Double) {
+                    avgRating = (Double) row[1];
+                } else if (row[1] instanceof Number) {
+                    avgRating = ((Number) row[1]).doubleValue();
+                }
+            }
 
             if (blockedTutorIds.contains(course.getTutorProfile().getId())) {
                 continue;
@@ -311,7 +320,7 @@ public class RatingService {
                     .category(course.getCategory() != null ? course.getCategory().toString() : "N/A")
                     .teachingMode(course.getTeachingMode() != null ? course.getTeachingMode().toString() : "N/A")
                     .price(course.getPrice())
-                    .averageRating(avgRating != null ? Math.round(avgRating * 10) / 10.0 : 0.0)
+                    .averageRating(Math.round(avgRating * 10) / 10.0)
                     .tutorName(tutorName)
                     .tutorId(tutor.getId())
                     .location(course.getLocation())
@@ -321,6 +330,7 @@ public class RatingService {
 
             recommendations.add(dto);
         }
+        System.out.println("✅ Returning " + recommendations.size() + " recommendations");
 
         return recommendations;
     }
@@ -418,29 +428,33 @@ public class RatingService {
 
                 TutorProfile tutor = tutorProfileRepository.findById(tutorId).orElse(null);
 
-                if (tutor != null) {
-                    List<String> topSubjects = courseRepository.findByTutorProfileId(tutorId)
-                            .stream()
-                            .map(Course::getSubject)
-                            .distinct()
-                            .limit(3)
-                            .collect(Collectors.toList());
-
-                    TopTutor dto = TopTutor.builder()
-                            .tutorId(tutorId)
-                            .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
-                            .tutorHeadline(tutor.getHeadline())
-                            .tutorImage(tutor.getProfilePictureUrl())
-                            .location(tutor.getLocation())
-                            .averageRating(Math.round(avgRating * 10) / 10.0)
-                            .totalRatings(ratingCount.intValue())
-                            .totalCourses(courseRepository.findByTutorProfileId(tutorId).size())
-                            .topSubjects(topSubjects)
-                            .rank(rank++)
-                            .build();
-
-                    topTutors.add(dto);
+                //  Skip if tutor is INACTIVE or not found
+                if (tutor == null
+                        || tutor.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+                    continue;
                 }
+
+                List<String> topSubjects = courseRepository.findByTutorProfileId(tutorId)
+                        .stream()
+                        .map(Course::getSubject)
+                        .distinct()
+                        .limit(3)
+                        .collect(Collectors.toList());
+
+                TopTutor dto = TopTutor.builder()
+                        .tutorId(tutorId)
+                        .tutorName(tutor.getFirstName() + " " + tutor.getLastName())
+                        .tutorHeadline(tutor.getHeadline())
+                        .tutorImage(tutor.getProfilePictureUrl())
+                        .location(tutor.getLocation())
+                        .averageRating(Math.round(avgRating * 10) / 10.0)
+                        .totalRatings(ratingCount.intValue())
+                        .totalCourses(courseRepository.findByTutorProfileId(tutorId).size())
+                        .topSubjects(topSubjects)
+                        .rank(rank++)
+                        .build();
+
+                topTutors.add(dto);
             }
         }
 
