@@ -25,14 +25,15 @@ public class NotificationService {
     // SAVE
     // ------------------------------------------------------------
     @Transactional
-    public void save(Long userId,
-                     String type,
-                     String title,
-                     String body,
-                     Long referenceId,
-                     Long senderId,
-                     String senderName,
-                     String senderImage) {
+    public Long saveAndReturnId(Long userId,
+                                String type,
+                                String title,
+                                String body,
+                                Long referenceId,
+                                Long courseId,
+                                Long senderId,
+                                String senderName,
+                                String senderImage) {
         try {
             Notification n = Notification.builder()
                     .userId(userId)
@@ -40,15 +41,27 @@ public class NotificationService {
                     .title(title)
                     .body(body)
                     .referenceId(referenceId)
+                    .courseId(courseId)
                     .senderId(senderId)
                     .senderName(senderName)
                     .senderImage(senderImage)
                     .build();
-            notificationRepo.save(n);
-            log.debug(" Notification saved for user {}", userId);
+            Notification saved = notificationRepo.save(n);
+            log.debug(" Notification saved with id {}", saved.getId());
+            return saved.getId();
         } catch (Exception e) {
             log.warn("Failed to save notification: {}", e.getMessage());
+            return null;
         }
+    }
+
+    // Keep old method for compatibility
+    @Transactional
+    public void save(Long userId, String type, String title, String body,
+                     Long referenceId, Long courseId, Long senderId,
+                     String senderName, String senderImage) {
+        saveAndReturnId(userId, type, title, body, referenceId, courseId,
+                senderId, senderName, senderImage);
     }
 
     // ------------------------------------------------------------
@@ -111,6 +124,7 @@ public class NotificationService {
                 .title(n.getTitle())
                 .body(n.getBody())
                 .referenceId(n.getReferenceId())
+                .courseId(n.getCourseId())
                 .senderId(n.getSenderId())
                 .senderName(n.getSenderName())
                 .senderImage(n.getSenderImage())

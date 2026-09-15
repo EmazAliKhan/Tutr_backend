@@ -12,6 +12,7 @@ public class NotificationResponse {
     private String title;
     private String body;
     private Long referenceId;
+    private Long courseId;
     private Long senderId;
     private String senderName;
     private String senderImage;

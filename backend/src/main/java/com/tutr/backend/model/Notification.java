@@ -33,6 +33,9 @@ public class Notification {
     @Column(name = "reference_id")
     private Long referenceId;
 
+    @Column(name = "course_id")
+    private Long courseId;
+
     @Column(name = "sender_id")
     private Long senderId;
 

@@ -13,7 +13,7 @@ public class AccountService {
 
     private final UserRepository userRepository;
     private final TutorProfileRepository tutorProfileRepository;
-    private final StudentProfileRepository studentProfileRepository;  // ✅ Add this
+    private final StudentProfileRepository studentProfileRepository;
     private final TutorStudentConnectionRepository connectionRepository;
     private final CourseRepository courseRepository;
 

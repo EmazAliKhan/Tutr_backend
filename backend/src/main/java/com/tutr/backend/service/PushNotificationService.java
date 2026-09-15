@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,29 +57,40 @@ public class PushNotificationService {
                            String title,
                            String body,
                            Map<String, String> data) {
-        // ✅ Save to notification history FIRST (before checking tokens)
+
+        // ✅ 1. Save to history FIRST and get the DB ID
+        Long notificationId = null;
         try {
             String type = data.getOrDefault("type", "general");
-            Long referenceId = parseLong(data.get("chatRoomId"));
+            Long referenceId = parseLong(data.get("connectionId"));
+            if (referenceId == null) referenceId = parseLong(data.get("chatRoomId"));
+            Long courseId = parseLong(data.get("courseId"));
             Long senderId = parseLong(data.get("senderId"));
             String senderName = data.get("senderName");
             String senderImage = data.get("senderImage");
 
-            notificationService.save(
+            notificationId = notificationService.saveAndReturnId(
                     userId, type, title, body,
-                    referenceId, senderId, senderName, senderImage
+                    referenceId, courseId, senderId, senderName, senderImage
             );
         } catch (Exception e) {
             log.warn("Failed to save notification history: {}", e.getMessage());
         }
 
+        // ✅ 2. Build a MUTABLE copy of the data map
+        //    (the original might be Map.of() which is immutable)
+        Map<String, String> mutableData = new HashMap<>(data);
+        if (notificationId != null) {
+            mutableData.put("notificationId", String.valueOf(notificationId));
+            mutableData.put("id", String.valueOf(notificationId));
+        }
+
+        // ✅ 3. Send push
         List<DeviceToken> tokens = tokenRepo.findByUserId(userId);
         if (tokens.isEmpty()) {
             log.info("No device tokens for user {} — saved to history only", userId);
             return;
         }
-
-
 
         List<String> tokenStrings = tokens.stream()
                 .map(DeviceToken::getToken)
@@ -91,7 +103,7 @@ public class PushNotificationService {
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .putAllData(data)
+                    .putAllData(mutableData)         // 👈 use mutable map
                     .setAndroidConfig(AndroidConfig.builder()
                             .setPriority(AndroidConfig.Priority.HIGH)
                             .setNotification(AndroidNotification.builder()
@@ -123,7 +135,7 @@ public class PushNotificationService {
     }
 
     // ------------------------------------------------------------
-    // ASYNC WRAPPER — used from ChatFacade (runs on separate thread)
+    // ASYNC WRAPPER — used from ChatFacade
     // ------------------------------------------------------------
     @Async
     public void sendToUserAsync(Long userId,
@@ -152,7 +164,9 @@ public class PushNotificationService {
         }
     }
 
-    //======Helper method=========
+    // ------------------------------------------------------------
+    // HELPER
+    // ------------------------------------------------------------
     private Long parseLong(String s) {
         if (s == null || s.isBlank()) return null;
         try {

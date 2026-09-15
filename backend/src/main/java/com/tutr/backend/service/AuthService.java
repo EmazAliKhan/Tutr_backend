@@ -22,6 +22,7 @@ public class AuthService {
     private final TutorDocumentsRepository documentsRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
+    private final NotificationService notificationService;
 
     public LoginResponse login(LoginRequest request) {
         // Find user by email
@@ -64,6 +65,9 @@ public class AuthService {
                     .ifPresent(profile -> builder.profileId(profile.getId()));
         }
 
+        // ✅ Send welcome notification on first login only
+        sendWelcomeNotificationIfFirstLogin(user);
+
         return builder.build();
     }
 
@@ -104,6 +108,49 @@ public class AuthService {
                 break;
             default:
                 throw new RuntimeException("Invalid registration step");
+        }
+    }
+
+    // ============================================================
+// WELCOME NOTIFICATION — FIRST LOGIN ONLY
+// ============================================================
+    private void sendWelcomeNotificationIfFirstLogin(User user) {
+        if (user.isWelcomeNotificationSent()) {
+            return; // already sent
+        }
+
+        try {
+            String title = "Welcome to Tutr! 🎉";
+            String body;
+
+            if (user.getRole() == Role.STUDENT) {
+                body = "Your account is ready. Explore top tutors and start learning today!";
+            } else if (user.getRole() == Role.TUTOR) {
+                body = "Your account is in pending verification. "
+                        + "Once approved by our team, you'll be able to add courses and connect with students.";
+            } else {
+                body = "Your account is ready. Welcome to Tutr!";
+            }
+
+            notificationService.save(
+                    user.getId(),
+                    "signup_welcome",
+                    title,
+                    body,
+                    null,   // referenceId
+                    null,   // courseId
+                    null,   // senderId
+                    "Tutr Team",
+                    ""      // senderImage
+            );
+
+            user.setWelcomeNotificationSent(true);
+            userRepository.save(user);
+
+            System.out.println(" Welcome notification saved for user " + user.getId()
+                    + " (" + user.getRole() + ")");
+        } catch (Exception e) {
+            System.out.println("⚠ Welcome notification failed: " + e.getMessage());
         }
     }
 

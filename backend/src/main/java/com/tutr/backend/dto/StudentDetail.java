@@ -11,6 +11,7 @@ import java.time.LocalDate;
 public class StudentDetail {
     // Student Info
     private Long studentId;
+    private Long studentUserId;
     private String studentName;
     private String studentImage;
     private String phoneNumber;

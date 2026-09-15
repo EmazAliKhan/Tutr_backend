@@ -97,6 +97,7 @@ public class StudentService {
         return StudentDetail.builder()
                 // Student Info
                 .studentId(student.getId())
+                .studentUserId(user.getId())
                 .studentName(student.getFirstName() + " " + student.getLastName())
                 .studentEmail(user.getEmail())
                 .studentImage(student.getProfilePictureUrl())

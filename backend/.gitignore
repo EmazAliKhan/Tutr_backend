@@ -34,3 +34,18 @@ build/
 
 ### Firebase ###
 src/main/resources/firebase-service-account.json
+
+### Logs ###
+logs/
+*.log
+
+### OS / IDE noise ###
+.DS_Store
+Thumbs.db
+*.swp
+
+### Env / secrets ###
+.env
+.env.local
+application-local.properties
+application-local.yml

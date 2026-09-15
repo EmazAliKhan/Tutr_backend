@@ -26,6 +26,10 @@ public class User {
     @Column(nullable = false)
     private boolean emailVerified = false;
 
+    @Column(name = "welcome_notification_sent")
+    @Builder.Default
+    private boolean welcomeNotificationSent = false;
+
     @Enumerated(EnumType.STRING)
     private Role role; // TUTOR / STUDENT
 
