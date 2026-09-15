@@ -54,6 +54,9 @@ public class AuthService {
                 .accountStatus(user.getAccountStatus())
                 .registrationStep(user.getRegistrationStep())
                 .emailVerified(user.isEmailVerified())
+                .createdAt(user.getCreatedAt() != null
+                        ? user.getCreatedAt().withNano(0).toString()
+                        : null)
                 .message("Login successful");
 
         // Get profile ID based on role

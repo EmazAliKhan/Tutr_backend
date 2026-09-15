@@ -16,5 +16,6 @@ public class LoginResponse {
     private Integer registrationStep;
     private String message;
     private boolean emailVerified;
+    private String createdAt;
 //    private String redirectUrl;
 }

@@ -247,6 +247,7 @@ public class UserController {
             return ResponseEntity.ok(Map.of(
                     "tempEmail", tempUser.getEmail(),
                     "role", tempUser.getRole().toString(),
+                    "createdAt", tempUser.getCreatedAt().toString(),
                     "message", "OTP sent to your email. Please verify to complete registration."
             ));
         } catch (RuntimeException e) {

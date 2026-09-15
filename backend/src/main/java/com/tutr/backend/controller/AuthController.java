@@ -39,6 +39,9 @@ public class AuthController {
             response.put("role", user.getRole());
             response.put("registrationStep", user.getRegistrationStep());
             response.put("accountStatus", user.getAccountStatus());
+            response.put("createdAt", user.getCreatedAt() != null
+                    ? user.getCreatedAt().withNano(0).toString()
+                    : null);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

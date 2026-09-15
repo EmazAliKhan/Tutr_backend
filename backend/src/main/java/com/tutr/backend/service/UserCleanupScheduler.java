@@ -17,7 +17,7 @@ public class UserCleanupScheduler {
     private final UserRepository userRepository;
     private final TutorProfileRepository tutorProfileRepository;
     private final StudentProfileRepository studentProfileRepository;
-    private final TutorDocumentsRepository tutorDocumentsRepository;  // ✅ Now works
+    private final TutorDocumentsRepository tutorDocumentsRepository;
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
 
@@ -111,7 +111,7 @@ public class UserCleanupScheduler {
             if (user.getRole() == Role.TUTOR) {
                 tutorProfileRepository.findByUser(user).ifPresent(tutorProfile -> {
 
-                    // ✅ Delete tutor profile picture from folder
+                    //  Delete tutor profile picture from folder
                     String profilePicUrl = tutorProfile.getProfilePictureUrl();
                     if (profilePicUrl != null && !profilePicUrl.isEmpty()) {
                         try {
