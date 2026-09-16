@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.TutorDashboard;
+import com.tutr.backend.dto.tutor.TutorDashboard;
 import com.tutr.backend.service.TutorDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

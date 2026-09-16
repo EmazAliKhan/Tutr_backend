@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.MessageResponse;
-import com.tutr.backend.dto.SendMessageRequest;
+import com.tutr.backend.dto.chat.MessageResponse;
+import com.tutr.backend.dto.chat.SendMessageRequest;
 import com.tutr.backend.model.entity.*;
 import com.tutr.backend.model.enums.MessageType;
 import com.tutr.backend.model.enums.Role;

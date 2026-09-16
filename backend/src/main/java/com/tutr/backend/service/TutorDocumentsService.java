@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.TutorDocumentsRequest;
+import com.tutr.backend.dto.profile.TutorDocumentsRequest;
 import com.tutr.backend.model.entity.TutorDocuments;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.model.enums.AccountStatus;

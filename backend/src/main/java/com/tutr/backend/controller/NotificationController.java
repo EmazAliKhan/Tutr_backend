@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.RegisterTokenRequest;
+import com.tutr.backend.dto.auth.RegisterTokenRequest;
 import com.tutr.backend.service.PushNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.LoginRequest;
-import com.tutr.backend.dto.LoginResponse;
+import com.tutr.backend.dto.auth.LoginRequest;
+import com.tutr.backend.dto.auth.LoginResponse;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.model.enums.VerificationStatus;

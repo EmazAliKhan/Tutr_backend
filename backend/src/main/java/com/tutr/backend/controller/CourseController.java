@@ -1,6 +1,11 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.*;
+import com.tutr.backend.dto.course.CourseCard;
+import com.tutr.backend.dto.course.CourseDetail;
+import com.tutr.backend.dto.course.CourseRequest;
+import com.tutr.backend.dto.course.CourseResponse;
+import com.tutr.backend.dto.student.StudentCourseCard;
+import com.tutr.backend.dto.tutor.TutorCourse;
 import com.tutr.backend.model.entity.Course;
 import com.tutr.backend.model.enums.CourseCategory;
 import com.tutr.backend.model.enums.PriceRange;

@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.RoleSignupRequest;
-import com.tutr.backend.dto.TutorProfileRequest;
+import com.tutr.backend.dto.auth.RoleSignupRequest;
+import com.tutr.backend.dto.profile.TutorProfileRequest;
 import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.model.enums.AccountStatus;
@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.transaction.annotation.Transactional;
-import com.tutr.backend.dto.TutorProfileResponse;
-import com.tutr.backend.dto.EditTutorProfileRequest;
-import com.tutr.backend.dto.ChangePasswordRequest;
+import com.tutr.backend.dto.profile.TutorProfileResponse;
+import com.tutr.backend.dto.profile.EditTutorProfileRequest;
+import com.tutr.backend.dto.auth.ChangePasswordRequest;
 
 @Service
 @RequiredArgsConstructor

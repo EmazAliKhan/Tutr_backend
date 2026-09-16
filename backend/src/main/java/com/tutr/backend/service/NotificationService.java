@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.NotificationResponse;
+import com.tutr.backend.dto.notification.NotificationResponse;
 import com.tutr.backend.model.entity.Notification;
 import com.tutr.backend.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;

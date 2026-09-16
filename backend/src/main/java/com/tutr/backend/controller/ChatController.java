@@ -1,8 +1,8 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.ChatRoomResponse;
-import com.tutr.backend.dto.MessageResponse;
-import com.tutr.backend.dto.SendMessageRequest;
+import com.tutr.backend.dto.chat.ChatRoomResponse;
+import com.tutr.backend.dto.chat.MessageResponse;
+import com.tutr.backend.dto.chat.SendMessageRequest;
 import com.tutr.backend.facade.ChatFacade;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

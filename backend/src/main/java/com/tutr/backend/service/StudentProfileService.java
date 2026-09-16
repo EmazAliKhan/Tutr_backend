@@ -1,8 +1,8 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.EditStudentProfileRequest;
-import com.tutr.backend.dto.StudentProfileRequest;
-import com.tutr.backend.dto.StudentProfileResponse;
+import com.tutr.backend.dto.profile.EditStudentProfileRequest;
+import com.tutr.backend.dto.profile.StudentProfileRequest;
+import com.tutr.backend.dto.profile.StudentProfileResponse;
 import com.tutr.backend.model.entity.StudentProfile;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.model.enums.Role;

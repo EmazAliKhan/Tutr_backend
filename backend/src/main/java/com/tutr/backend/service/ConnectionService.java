@@ -1,6 +1,9 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.*;
+import com.tutr.backend.dto.connection.ConnectionRequest;
+import com.tutr.backend.dto.connection.ConnectionResponse;
+import com.tutr.backend.dto.student.StudentBid;
+import com.tutr.backend.dto.tutor.TutorBid;
 import com.tutr.backend.model.entity.Course;
 import com.tutr.backend.model.entity.StudentProfile;
 import com.tutr.backend.model.entity.TutorProfile;

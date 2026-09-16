@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.ChangePasswordRequest;
+import com.tutr.backend.dto.auth.ChangePasswordRequest;
 import com.tutr.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

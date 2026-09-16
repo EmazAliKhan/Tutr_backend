@@ -1,13 +1,13 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.*;
+import com.tutr.backend.dto.course.CourseReviewsResponse;
+import com.tutr.backend.dto.rating.RatingRequest;
+import com.tutr.backend.dto.rating.RatingResponse;
 import com.tutr.backend.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/student/ratings")

@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.ChatRoomResponse;
+import com.tutr.backend.dto.chat.ChatRoomResponse;
 import com.tutr.backend.model.entity.ChatRoom;
 import com.tutr.backend.model.entity.Message;
 import com.tutr.backend.model.entity.StudentProfile;

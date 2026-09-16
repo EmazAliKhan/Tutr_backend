@@ -1,6 +1,8 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.*;
+import com.tutr.backend.dto.auth.OtpVerifyRequest;
+import com.tutr.backend.dto.auth.RoleSignupRequest;
+import com.tutr.backend.dto.profile.*;
 import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.service.UserService;

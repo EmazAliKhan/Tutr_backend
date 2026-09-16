@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.TutorDocumentsRequest;
+import com.tutr.backend.dto.profile.TutorDocumentsRequest;
 import com.tutr.backend.model.entity.TutorDocuments;
 import com.tutr.backend.model.enums.VerificationStatus;
 import com.tutr.backend.service.TutorDocumentsService;
