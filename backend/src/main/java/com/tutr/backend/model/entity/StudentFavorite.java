@@ -1,4 +1,4 @@
-package com.tutr.backend.model;
+package com.tutr.backend.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

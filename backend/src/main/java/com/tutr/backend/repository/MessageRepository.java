@@ -1,7 +1,7 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.Message;
-import com.tutr.backend.model.ChatRoom;
+import com.tutr.backend.model.entity.Message;
+import com.tutr.backend.model.entity.ChatRoom;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

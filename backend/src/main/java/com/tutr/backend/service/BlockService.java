@@ -3,7 +3,9 @@ package com.tutr.backend.service;
 import com.tutr.backend.dto.BlockedTutor;
 import com.tutr.backend.dto.ReportTutorRequest;
 import com.tutr.backend.dto.TutorReport;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.StudentProfile;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.enums.ReportStatus;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,7 @@ public class BlockService {
         }
 
         // Create block entity - using correct field names from entity
-        com.tutr.backend.model.BlockedTutor blockEntity = com.tutr.backend.model.BlockedTutor.builder()
+        com.tutr.backend.model.entity.BlockedTutor blockEntity = com.tutr.backend.model.entity.BlockedTutor.builder()
                 .student(student)
                 .tutor(tutor)
                 .blockedAt(LocalDateTime.now())
@@ -68,7 +70,7 @@ public class BlockService {
             throw new RuntimeException("Student not found");
         }
 
-        List<com.tutr.backend.model.BlockedTutor> blockedEntities =
+        List<com.tutr.backend.model.entity.BlockedTutor> blockedEntities =
                 blockedRepository.findByStudentId(studentId);
 
         return blockedEntities.stream()
@@ -117,7 +119,7 @@ public class BlockService {
         }
 
         // Create report entity
-        com.tutr.backend.model.TutorReport reportEntity = com.tutr.backend.model.TutorReport.builder()
+        com.tutr.backend.model.entity.TutorReport reportEntity = com.tutr.backend.model.entity.TutorReport.builder()
                 .student(student)
                 .tutor(tutor)
                 .reason(request.getReason())
@@ -126,7 +128,7 @@ public class BlockService {
                 .status(ReportStatus.PENDING)
                 .build();
 
-        com.tutr.backend.model.TutorReport savedEntity = reportRepository.save(reportEntity);
+        com.tutr.backend.model.entity.TutorReport savedEntity = reportRepository.save(reportEntity);
 
         return convertToReportDTO(savedEntity);
     }
@@ -145,7 +147,7 @@ public class BlockService {
 
     // ============ HELPER METHODS ============
 
-    private TutorReport convertToReportDTO(com.tutr.backend.model.TutorReport entity) {
+    private TutorReport convertToReportDTO(com.tutr.backend.model.entity.TutorReport entity) {
         return TutorReport.builder()
                 .reportId(entity.getId())
                 .studentId(entity.getStudent().getId())

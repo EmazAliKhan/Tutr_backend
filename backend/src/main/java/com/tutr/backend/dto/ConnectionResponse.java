@@ -1,8 +1,8 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.ConnectionStatus;
-import com.tutr.backend.model.CourseCategory;
-import com.tutr.backend.model.TeachingMode;
+import com.tutr.backend.model.enums.ConnectionStatus;
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.TeachingMode;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;

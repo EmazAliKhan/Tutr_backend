@@ -1,6 +1,6 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.EmailVerification;
+import com.tutr.backend.model.entity.EmailVerification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

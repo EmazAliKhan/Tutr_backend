@@ -1,6 +1,6 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.ConnectionStatus;
+import com.tutr.backend.model.enums.ConnectionStatus;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;

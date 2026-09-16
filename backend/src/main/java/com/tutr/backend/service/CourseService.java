@@ -1,7 +1,10 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.Course;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.entity.TutorStudentConnection;
+import com.tutr.backend.model.enums.*;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +17,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service

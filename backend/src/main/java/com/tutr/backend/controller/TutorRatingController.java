@@ -1,8 +1,8 @@
 package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.CourseCategory;
-import com.tutr.backend.model.TeachingMode;
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

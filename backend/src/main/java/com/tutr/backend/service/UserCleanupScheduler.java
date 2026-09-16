@@ -1,6 +1,8 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.User;
+import com.tutr.backend.model.enums.AccountStatus;
+import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;

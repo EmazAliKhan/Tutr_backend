@@ -1,7 +1,11 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.FavoriteCourse;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.Course;
+import com.tutr.backend.model.entity.StudentFavorite;
+import com.tutr.backend.model.entity.StudentProfile;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.TutorReport;
+import com.tutr.backend.model.entity.TutorReport;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

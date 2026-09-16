@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.model.TutorProfile;
+import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.service.FileStorageService;
 import lombok.RequiredArgsConstructor;

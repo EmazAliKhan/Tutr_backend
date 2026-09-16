@@ -2,7 +2,10 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.dto.RoleSignupRequest;
 import com.tutr.backend.dto.TutorProfileRequest;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.entity.User;
+import com.tutr.backend.model.enums.AccountStatus;
+import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.util.AgeValidator;

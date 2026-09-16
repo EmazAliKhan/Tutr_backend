@@ -1,5 +1,6 @@
-package com.tutr.backend.model;
+package com.tutr.backend.model.entity;
 
+import com.tutr.backend.model.enums.VerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

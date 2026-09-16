@@ -1,12 +1,12 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.ConnectionStatus;
-import com.tutr.backend.model.CourseCategory;
-import com.tutr.backend.model.TeachingMode;
-import com.tutr.backend.model.DaysOfWeek;
+import com.tutr.backend.model.enums.ConnectionStatus;
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.TeachingMode;
+import com.tutr.backend.model.enums.DaysOfWeek;
 import lombok.Builder;
 import lombok.Data;
-import java.time.LocalTime;
+
 import java.time.LocalDateTime;
 import java.util.List;
 

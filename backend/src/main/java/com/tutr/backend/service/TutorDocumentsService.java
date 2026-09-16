@@ -1,7 +1,11 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.TutorDocumentsRequest;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.TutorDocuments;
+import com.tutr.backend.model.entity.User;
+import com.tutr.backend.model.enums.AccountStatus;
+import com.tutr.backend.model.enums.Role;
+import com.tutr.backend.model.enums.VerificationStatus;
 import com.tutr.backend.repository.TutorDocumentsRepository;
 import com.tutr.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

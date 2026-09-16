@@ -1,8 +1,8 @@
 package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.TutorDocumentsRequest;
-import com.tutr.backend.model.TutorDocuments;
-import com.tutr.backend.model.VerificationStatus;
+import com.tutr.backend.model.entity.TutorDocuments;
+import com.tutr.backend.model.enums.VerificationStatus;
 import com.tutr.backend.service.TutorDocumentsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.model.AccountStatus;
+import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

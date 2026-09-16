@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.model.EmailVerification;
-import com.tutr.backend.model.User;
+import com.tutr.backend.model.entity.EmailVerification;
+import com.tutr.backend.model.entity.User;
 import com.tutr.backend.repository.EmailVerificationRepository;
 import com.tutr.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

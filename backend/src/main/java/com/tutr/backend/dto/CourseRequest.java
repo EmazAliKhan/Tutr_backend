@@ -1,10 +1,9 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.CourseCategory;
-import com.tutr.backend.model.TeachingMode;
-import com.tutr.backend.model.DaysOfWeek;
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.TeachingMode;
+import com.tutr.backend.model.enums.DaysOfWeek;
 import lombok.Data;
-import java.time.LocalTime;
 
 @Data
 public class CourseRequest {

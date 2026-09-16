@@ -1,4 +1,4 @@
-package com.tutr.backend.model;
+package com.tutr.backend.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,8 +9,8 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "tutor_profiles")
-public class TutorProfile {
+@Table(name = "student_profiles")
+public class StudentProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,15 +19,18 @@ public class TutorProfile {
     @OneToOne
     @JoinColumn(name = "user_id", unique = true)
     private User user;
+
     private String firstName;
     private String lastName;
     private String phoneNumber;
-    private String headline;
     private String profilePictureUrl;
     private String gender;
     private LocalDate dateOfBirth;
     private String location;
-    private String universityName;
-    private String collegeName;
-    private String workExperience;
+    private String collegeName;        // Instead of universityName
+    private String schoolName;         // Instead of collegeName
+              // Instead of workExperience (subjects they want to learn)
+
+    @Builder.Default
+    private Integer registrationStep = 2;
 }

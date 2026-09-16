@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.model.Role;
+import com.tutr.backend.model.enums.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;

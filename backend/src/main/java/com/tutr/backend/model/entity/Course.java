@@ -1,5 +1,8 @@
-package com.tutr.backend.model;
+package com.tutr.backend.model.entity;
 
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.DaysOfWeek;
+import com.tutr.backend.model.enums.TeachingMode;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalTime;

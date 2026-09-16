@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.NotificationResponse;
-import com.tutr.backend.model.Notification;
+import com.tutr.backend.model.entity.Notification;
 import com.tutr.backend.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

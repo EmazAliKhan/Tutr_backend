@@ -1,6 +1,7 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.TutorStudentConnection;
+import com.tutr.backend.model.enums.ConnectionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

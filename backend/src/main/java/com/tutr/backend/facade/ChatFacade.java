@@ -3,7 +3,7 @@ package com.tutr.backend.facade;
 import com.tutr.backend.dto.ChatRoomResponse;
 import com.tutr.backend.dto.MessageResponse;
 import com.tutr.backend.dto.SendMessageRequest;
-import com.tutr.backend.model.ChatRoom;
+import com.tutr.backend.model.entity.ChatRoom;
 import com.tutr.backend.service.ChatRoomService;
 import com.tutr.backend.service.ConnectionService;
 import com.tutr.backend.service.MessageService;

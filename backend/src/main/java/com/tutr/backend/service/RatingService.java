@@ -1,7 +1,11 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.*;
+import com.tutr.backend.model.enums.AccountStatus;
+import com.tutr.backend.model.enums.ConnectionStatus;
+import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.tutr.backend.model;
+package com.tutr.backend.model.enums;
 
 public enum ReportStatus {
     PENDING,

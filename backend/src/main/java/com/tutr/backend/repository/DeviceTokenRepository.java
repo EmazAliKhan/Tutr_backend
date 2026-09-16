@@ -1,6 +1,6 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.DeviceToken;
+import com.tutr.backend.model.entity.DeviceToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;

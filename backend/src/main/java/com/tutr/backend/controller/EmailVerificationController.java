@@ -4,7 +4,7 @@ import com.tutr.backend.dto.ForgotPasswordRequest;
 import com.tutr.backend.dto.OtpSendRequest;
 import com.tutr.backend.dto.OtpVerifyRequest;
 import com.tutr.backend.dto.ResetPasswordRequest;
-import com.tutr.backend.model.User;
+import com.tutr.backend.model.entity.User;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.service.EmailVerificationService;
 import lombok.RequiredArgsConstructor;

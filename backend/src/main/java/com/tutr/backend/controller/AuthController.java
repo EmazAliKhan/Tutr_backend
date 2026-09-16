@@ -2,7 +2,7 @@ package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.LoginRequest;
 import com.tutr.backend.dto.LoginResponse;
-import com.tutr.backend.model.User;
+import com.tutr.backend.model.entity.User;
 import com.tutr.backend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

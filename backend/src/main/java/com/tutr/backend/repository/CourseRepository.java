@@ -1,9 +1,8 @@
 package com.tutr.backend.repository;
 
-import com.tutr.backend.model.Course;
-import com.tutr.backend.model.TeachingMode;
-import com.tutr.backend.model.TutorProfile;
-import com.tutr.backend.model.CourseCategory;
+import com.tutr.backend.model.entity.Course;
+import com.tutr.backend.model.enums.TeachingMode;
+import com.tutr.backend.model.enums.CourseCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,7 +42,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "FROM Course c " +
             "LEFT JOIN RatingReview r ON c.id = r.course.id " +
             "WHERE c.isAvailable = true " +
-            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.AccountStatus.ACTIVE " +
+            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.enums.AccountStatus.ACTIVE " +
             "AND (:location IS NULL OR LOCATE(LOWER(:location), LOWER(c.location)) > 0) " +
             "GROUP BY c.id " +
             "ORDER BY avgRating DESC NULLS LAST, c.createdAt DESC")
@@ -54,7 +53,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "FROM Course c " +
             "LEFT JOIN RatingReview r ON c.id = r.course.id " +
             "WHERE c.isAvailable = true " +
-            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.AccountStatus.ACTIVE " +
+            "AND c.tutorProfile.user.accountStatus = com.tutr.backend.model.enums.AccountStatus.ACTIVE " +
             "GROUP BY c.id " +
             "HAVING AVG(r.rating) >= 4.0 OR COUNT(r) = 0 " +
             "ORDER BY avgRating DESC, c.createdAt DESC")

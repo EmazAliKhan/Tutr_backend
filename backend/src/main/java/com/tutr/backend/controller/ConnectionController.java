@@ -1,7 +1,7 @@
 package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.TutorStudentConnection;
+import com.tutr.backend.model.entity.TutorStudentConnection;
 import com.tutr.backend.service.ConnectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

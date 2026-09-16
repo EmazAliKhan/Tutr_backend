@@ -1,6 +1,6 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.ReportReason;
+import com.tutr.backend.model.enums.ReportReason;
 import lombok.Data;
 
 @Data

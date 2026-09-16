@@ -1,7 +1,7 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.ReportReason;
-import com.tutr.backend.model.ReportStatus;
+import com.tutr.backend.model.enums.ReportReason;
+import com.tutr.backend.model.enums.ReportStatus;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;

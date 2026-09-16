@@ -1,7 +1,7 @@
 package com.tutr.backend.dto;
 
-import com.tutr.backend.model.Role;
-import com.tutr.backend.model.AccountStatus;
+import com.tutr.backend.model.enums.Role;
+import com.tutr.backend.model.enums.AccountStatus;
 import lombok.Builder;
 import lombok.Data;
 

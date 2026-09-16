@@ -1,10 +1,10 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.ChatRoomResponse;
-import com.tutr.backend.model.ChatRoom;
-import com.tutr.backend.model.Message;
-import com.tutr.backend.model.StudentProfile;
-import com.tutr.backend.model.TutorProfile;
+import com.tutr.backend.model.entity.ChatRoom;
+import com.tutr.backend.model.entity.Message;
+import com.tutr.backend.model.entity.StudentProfile;
+import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.repository.ChatRoomRepository;
 import com.tutr.backend.repository.MessageRepository;
 import com.tutr.backend.repository.StudentProfileRepository;

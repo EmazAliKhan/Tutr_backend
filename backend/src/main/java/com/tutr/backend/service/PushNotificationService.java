@@ -1,7 +1,7 @@
 package com.tutr.backend.service;
 
 import com.google.firebase.messaging.*;
-import com.tutr.backend.model.DeviceToken;
+import com.tutr.backend.model.entity.DeviceToken;
 import com.tutr.backend.repository.DeviceTokenRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;

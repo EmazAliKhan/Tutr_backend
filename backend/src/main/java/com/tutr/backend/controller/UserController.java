@@ -1,20 +1,17 @@
 package com.tutr.backend.controller;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.TutorProfile;
-import com.tutr.backend.model.User;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.entity.User;
 import com.tutr.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
-import org.springframework.web.multipart.MultipartFile;
-import com.tutr.backend.model.StudentProfile;
+import com.tutr.backend.model.entity.StudentProfile;
 import com.tutr.backend.service.StudentProfileService;
 import org.springframework.http.HttpStatus;
 
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

@@ -1,7 +1,13 @@
 package com.tutr.backend.service;
 
 import com.tutr.backend.dto.*;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.Course;
+import com.tutr.backend.model.entity.StudentProfile;
+import com.tutr.backend.model.entity.TutorProfile;
+import com.tutr.backend.model.entity.TutorStudentConnection;
+import com.tutr.backend.model.enums.AccountStatus;
+import com.tutr.backend.model.enums.ConnectionStatus;
+import com.tutr.backend.model.enums.DaysOfWeek;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j

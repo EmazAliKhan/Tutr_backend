@@ -1,7 +1,5 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.model.TutorProfile;
-import com.tutr.backend.model.StudentProfile;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.StudentProfileRepository;
 import lombok.RequiredArgsConstructor;

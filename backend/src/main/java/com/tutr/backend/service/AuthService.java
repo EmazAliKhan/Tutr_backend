@@ -2,7 +2,9 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.dto.LoginRequest;
 import com.tutr.backend.dto.LoginResponse;
-import com.tutr.backend.model.*;
+import com.tutr.backend.model.entity.User;
+import com.tutr.backend.model.enums.Role;
+import com.tutr.backend.model.enums.VerificationStatus;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.StudentProfileRepository;
