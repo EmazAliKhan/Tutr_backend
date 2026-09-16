@@ -1,6 +1,6 @@
 package com.tutr.backend.dto.course;
 
-import com.tutr.backend.dto.tutor.StudentReview;
+import com.tutr.backend.dto.student.StudentReview;
 import lombok.Builder;
 import lombok.Data;
 import java.util.List;

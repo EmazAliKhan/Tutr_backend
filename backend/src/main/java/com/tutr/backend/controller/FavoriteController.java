@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.student.FavoriteCourse;
+import com.tutr.backend.dto.course.FavoriteCourse;
 import com.tutr.backend.service.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

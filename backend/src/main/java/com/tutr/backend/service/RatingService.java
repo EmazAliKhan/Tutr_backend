@@ -2,11 +2,11 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.dto.course.CourseReviewsResponse;
 import com.tutr.backend.dto.rating.*;
-import com.tutr.backend.dto.student.AllTutor;
-import com.tutr.backend.dto.student.RecommendedCourse;
-import com.tutr.backend.dto.student.TopCourse;
-import com.tutr.backend.dto.student.TopTutor;
-import com.tutr.backend.dto.tutor.StudentReview;
+import com.tutr.backend.dto.tutor.AllTutor;
+import com.tutr.backend.dto.course.RecommendedCourse;
+import com.tutr.backend.dto.course.TopCourse;
+import com.tutr.backend.dto.tutor.TopTutor;
+import com.tutr.backend.dto.student.StudentReview;
 import com.tutr.backend.model.entity.*;
 import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.model.enums.ConnectionStatus;

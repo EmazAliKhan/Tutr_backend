@@ -3,7 +3,7 @@ package com.tutr.backend.controller;
 import com.tutr.backend.dto.rating.FilterOptions;
 import com.tutr.backend.dto.rating.TutorRatingSummary;
 import com.tutr.backend.dto.rating.TutorReviewDetail;
-import com.tutr.backend.dto.student.TopCourse;
+import com.tutr.backend.dto.course.TopCourse;
 import com.tutr.backend.model.enums.CourseCategory;
 import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.service.RatingService;

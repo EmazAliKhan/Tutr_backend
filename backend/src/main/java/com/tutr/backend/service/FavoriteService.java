@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.student.FavoriteCourse;
+import com.tutr.backend.dto.course.FavoriteCourse;
 import com.tutr.backend.model.entity.Course;
 import com.tutr.backend.model.entity.StudentFavorite;
 import com.tutr.backend.model.entity.StudentProfile;

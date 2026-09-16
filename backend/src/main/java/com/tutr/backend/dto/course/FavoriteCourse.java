@@ -1,11 +1,12 @@
-package com.tutr.backend.dto.student;
+package com.tutr.backend.dto.course;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class TopCourse {
+public class FavoriteCourse {
+    private Long favoriteId;
     private Long courseId;
     private String subject;
     private String category;
@@ -13,7 +14,8 @@ public class TopCourse {
     private Double price;
     private Double averageRating;
     private String tutorName;
-    private Integer totalStudents;
     private Long tutorId;
-    private Integer rank; // 1st, 2nd, 3rd, etc.
+    private String location;
+    private Boolean isAvailable;
+    private String favoritedAt;
 }

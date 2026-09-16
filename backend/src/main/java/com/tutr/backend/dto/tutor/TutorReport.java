@@ -1,4 +1,4 @@
-package com.tutr.backend.dto.student;
+package com.tutr.backend.dto.tutor;
 
 import com.tutr.backend.model.enums.ReportReason;
 import com.tutr.backend.model.enums.ReportStatus;

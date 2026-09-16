@@ -1,4 +1,4 @@
-package com.tutr.backend.dto.tutor;
+package com.tutr.backend.dto.student;
 
 import com.tutr.backend.model.enums.ConnectionStatus;
 import lombok.Builder;

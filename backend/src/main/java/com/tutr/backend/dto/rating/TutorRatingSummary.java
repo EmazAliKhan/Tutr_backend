@@ -1,6 +1,6 @@
 package com.tutr.backend.dto.rating;
 
-import com.tutr.backend.dto.tutor.StudentReview;
+import com.tutr.backend.dto.student.StudentReview;
 import com.tutr.backend.model.enums.CourseCategory;
 import com.tutr.backend.model.enums.TeachingMode;
 import lombok.Builder;

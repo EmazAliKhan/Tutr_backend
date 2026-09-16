@@ -1,8 +1,8 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.tutor.StudentFilter;
-import com.tutr.backend.dto.tutor.StudentList;
-import com.tutr.backend.dto.tutor.StudentDetail;
+import com.tutr.backend.dto.student.StudentFilter;
+import com.tutr.backend.dto.student.StudentList;
+import com.tutr.backend.dto.student.StudentDetail;
 import com.tutr.backend.model.entity.Course;
 import com.tutr.backend.model.entity.StudentProfile;
 import com.tutr.backend.model.entity.TutorStudentConnection;

@@ -1,6 +1,6 @@
 package com.tutr.backend.service;
 
-import com.tutr.backend.dto.student.TopCourse;
+import com.tutr.backend.dto.course.TopCourse;
 import com.tutr.backend.dto.tutor.TutorDashboard;
 import com.tutr.backend.model.entity.Course;
 import com.tutr.backend.model.entity.TutorProfile;

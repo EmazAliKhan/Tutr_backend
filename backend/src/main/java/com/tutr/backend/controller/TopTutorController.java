@@ -1,6 +1,6 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.student.TopTutor;
+import com.tutr.backend.dto.tutor.TopTutor;
 import com.tutr.backend.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

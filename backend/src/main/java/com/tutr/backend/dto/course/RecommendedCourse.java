@@ -1,4 +1,4 @@
-package com.tutr.backend.dto.student;
+package com.tutr.backend.dto.course;
 
 import lombok.Builder;
 import lombok.Data;

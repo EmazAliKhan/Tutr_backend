@@ -1,8 +1,8 @@
 package com.tutr.backend.controller;
 
-import com.tutr.backend.dto.student.BlockedTutor;
+import com.tutr.backend.dto.tutor.BlockedTutor;
 import com.tutr.backend.dto.report.ReportTutorRequest;
-import com.tutr.backend.dto.student.TutorReport;
+import com.tutr.backend.dto.tutor.TutorReport;
 import com.tutr.backend.service.BlockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
