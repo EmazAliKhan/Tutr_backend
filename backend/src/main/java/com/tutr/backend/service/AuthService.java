@@ -12,6 +12,7 @@ import com.tutr.backend.repository.TutorDocumentsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.tutr.backend.security.JwtUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final NotificationService notificationService;
+    private final JwtUtil jwtUtil;
 
     public LoginResponse login(LoginRequest request) {
         // Find user by email
@@ -59,6 +61,11 @@ public class AuthService {
                 .createdAt(user.getCreatedAt() != null
                         ? user.getCreatedAt().withNano(0).toString()
                         : null)
+                .token(jwtUtil.generateToken(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getRole().name()
+                ))
                 .message("Login successful");
 
         // Get profile ID based on role

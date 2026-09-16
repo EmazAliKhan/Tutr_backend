@@ -17,5 +17,6 @@ public class LoginResponse {
     private String message;
     private boolean emailVerified;
     private String createdAt;
+    private String token;
 //    private String redirectUrl;
 }

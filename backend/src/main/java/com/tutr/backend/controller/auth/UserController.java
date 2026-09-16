@@ -1,4 +1,4 @@
-package com.tutr.backend.controller.profile;
+package com.tutr.backend.controller.auth;
 
 import com.tutr.backend.dto.auth.OtpVerifyRequest;
 import com.tutr.backend.dto.auth.RoleSignupRequest;
