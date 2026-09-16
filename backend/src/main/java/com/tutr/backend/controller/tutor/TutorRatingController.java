@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.tutor;
 
 import com.tutr.backend.dto.rating.FilterOptions;
 import com.tutr.backend.dto.rating.TutorRatingSummary;

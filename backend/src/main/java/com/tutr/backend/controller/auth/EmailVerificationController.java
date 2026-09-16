@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.auth;
 
 import com.tutr.backend.dto.auth.ForgotPasswordRequest;
 import com.tutr.backend.dto.auth.OtpSendRequest;

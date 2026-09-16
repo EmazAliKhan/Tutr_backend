@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.course;
 
 import com.tutr.backend.dto.course.CourseCard;
 import com.tutr.backend.dto.course.CourseDetail;

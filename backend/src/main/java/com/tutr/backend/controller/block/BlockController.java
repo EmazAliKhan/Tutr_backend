@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.block;
 
 import com.tutr.backend.dto.tutor.BlockedTutor;
 import com.tutr.backend.dto.report.ReportTutorRequest;

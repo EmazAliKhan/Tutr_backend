@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.auth;
 
 import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.service.AccountService;

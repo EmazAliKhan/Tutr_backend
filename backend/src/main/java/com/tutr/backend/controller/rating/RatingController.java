@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.rating;
 
 import com.tutr.backend.dto.course.CourseReviewsResponse;
 import com.tutr.backend.dto.rating.RatingRequest;

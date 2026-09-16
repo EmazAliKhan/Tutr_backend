@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.profile;
 
 import com.tutr.backend.dto.profile.StudentTutorProfile;
 import com.tutr.backend.service.StudentTutorProfileService;

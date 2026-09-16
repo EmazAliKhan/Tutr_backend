@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.auth;
 
 import com.tutr.backend.dto.auth.ChangePasswordRequest;
 import com.tutr.backend.service.UserService;

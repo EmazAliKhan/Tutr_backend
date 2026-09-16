@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.connection;
 
 import com.tutr.backend.dto.connection.ConnectionRequest;
 import com.tutr.backend.dto.connection.ConnectionResponse;

@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.profile;
 
 import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.StudentProfileRepository;

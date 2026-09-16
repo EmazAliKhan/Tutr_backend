@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.favorite;
 
 import com.tutr.backend.dto.course.FavoriteCourse;
 import com.tutr.backend.service.FavoriteService;

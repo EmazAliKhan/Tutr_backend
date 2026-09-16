@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.chat;
 
 import com.tutr.backend.dto.chat.ChatRoomResponse;
 import com.tutr.backend.dto.chat.MessageResponse;

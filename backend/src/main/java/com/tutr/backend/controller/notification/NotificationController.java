@@ -1,4 +1,4 @@
-package com.tutr.backend.controller;
+package com.tutr.backend.controller.notification;
 
 import com.tutr.backend.dto.auth.RegisterTokenRequest;
 import com.tutr.backend.service.PushNotificationService;
