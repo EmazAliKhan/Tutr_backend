@@ -10,11 +10,13 @@ import com.tutr.backend.repository.StudentProfileRepository;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.util.AgeValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentProfileService {
@@ -24,30 +26,30 @@ public class StudentProfileService {
     private final FileStorageService fileStorageService;
     private final EmailVerificationService emailVerificationService;
 
+    // ============================================================
+    // CREATE STUDENT PROFILE
+    // ============================================================
     @Transactional
     public StudentProfile createStudentProfile(StudentProfileRequest request) {
-        // Get user
+        log.debug("Creating student profile for userId={}", request.getUserId());
+
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        //  Email verification check
         if (!user.isEmailVerified()) {
+            log.warn("Profile creation blocked — email not verified for userId={}", user.getId());
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
 
-        // VALIDATE STUDENT AGE - Must be at least 16
         AgeValidator.validateStudentAge(request.getDateOfBirth());
 
-        // Verify user is a student
         if (user.getRole() != Role.STUDENT) {
             throw new RuntimeException("User is not a student");
         }
 
-        // Check if profile already exists
         StudentProfile profile = studentProfileRepository.findByUser(user)
                 .orElse(new StudentProfile());
 
-        // Update profile fields
         profile.setUser(user);
         profile.setFirstName(request.getFirstName());
         profile.setLastName(request.getLastName());
@@ -58,18 +60,19 @@ public class StudentProfileService {
         profile.setCollegeName(request.getCollegeName());
         profile.setSchoolName(request.getSchoolName());
 
-        // Update user registration step
         user.setRegistrationStep(2);
-
         user.setDeleteAt(null);
         user.setDeletionWarningSent(false);
         userRepository.save(user);
 
-        return studentProfileRepository.save(profile);
+        StudentProfile saved = studentProfileRepository.save(profile);
+        log.info("Student profile created: profileId={}, userId={}", saved.getId(), user.getId());
+        return saved;
     }
 
-
-    // GET student profile for editing
+    // ============================================================
+    // GET STUDENT PROFILE (for editing)
+    // ============================================================
     public StudentProfileResponse getStudentProfile(Long profileId) {
         StudentProfile profile = studentProfileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Student profile not found"));
@@ -92,22 +95,23 @@ public class StudentProfileService {
                 .build();
     }
 
-    // EDIT student profile
+    // ============================================================
+    // EDIT STUDENT PROFILE
+    // ============================================================
     @Transactional
     public StudentProfile editStudentProfile(EditStudentProfileRequest request) {
-        // Find the student profile
+        log.debug("Editing student profile: profileId={}", request.getProfileId());
+
         StudentProfile profile = studentProfileRepository.findById(request.getProfileId())
                 .orElseThrow(() -> new RuntimeException("Student profile not found"));
 
         User user = profile.getUser();
 
-        // Validate age if date of birth is being changed
         if (request.getDateOfBirth() != null && !request.getDateOfBirth().equals(profile.getDateOfBirth())) {
             AgeValidator.validateStudentAge(request.getDateOfBirth());
             profile.setDateOfBirth(request.getDateOfBirth());
         }
 
-        // Update fields (only if provided)
         if (request.getFirstName() != null) {
             profile.setFirstName(request.getFirstName());
         }
@@ -130,27 +134,28 @@ public class StudentProfileService {
             profile.setCollegeName(request.getCollegeName());
         }
 
-
         // Handle profile image update if provided
         if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
             try {
-                // DELETE OLD IMAGE IF EXISTS
                 String oldImageUrl = profile.getProfilePictureUrl();
                 if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
                     fileStorageService.deleteFile(oldImageUrl);
-                    System.out.println("Old student image deleted: " + oldImageUrl);
+                    log.debug("Old student image deleted: {}", oldImageUrl);
                 }
 
-                // Save new image with user ID
                 String imageUrl = fileStorageService.storeStudentImage(request.getProfileImage(), user.getId());
                 profile.setProfilePictureUrl(imageUrl);
-                System.out.println("New student image saved: " + imageUrl);
+                log.info("New student image saved: {}", imageUrl);
 
             } catch (IOException e) {
+                log.error("Failed to update student profile image for profileId={}: {}",
+                        request.getProfileId(), e.getMessage(), e);
                 throw new RuntimeException("Failed to update profile image: " + e.getMessage());
             }
         }
 
-        return studentProfileRepository.save(profile);
+        StudentProfile saved = studentProfileRepository.save(profile);
+        log.info("Student profile updated: profileId={}", saved.getId());
+        return saved;
     }
 }

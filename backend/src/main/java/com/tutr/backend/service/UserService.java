@@ -10,18 +10,21 @@ import com.tutr.backend.repository.TutorProfileRepository;
 import com.tutr.backend.repository.UserRepository;
 import com.tutr.backend.util.AgeValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.transaction.annotation.Transactional;
 import com.tutr.backend.dto.profile.TutorProfileResponse;
 import com.tutr.backend.dto.profile.EditTutorProfileRequest;
 import com.tutr.backend.dto.auth.ChangePasswordRequest;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -30,12 +33,12 @@ public class UserService {
     private final TutorProfileRepository tutorProfileRepository;
     private final FileStorageService fileStorageService;
     private final BCryptPasswordEncoder passwordEncoder;
-
-    // Email verification service
     private final EmailVerificationService emailVerificationService;
     private final Map<String, User> temporaryUserCache = new ConcurrentHashMap<>();
 
-    // Get tutor profile for editing
+    // ============================================================
+    // GET TUTOR PROFILE (for editing)
+    // ============================================================
     public TutorProfileResponse getTutorProfile(Long profileId) {
         TutorProfile profile = tutorProfileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Tutor profile not found"));
@@ -60,22 +63,23 @@ public class UserService {
                 .build();
     }
 
-    // Edit tutor profile
+    // ============================================================
+    // EDIT TUTOR PROFILE
+    // ============================================================
     @Transactional
     public TutorProfile editTutorProfile(EditTutorProfileRequest request) {
-        // Find the tutor profile
+        log.debug("Editing tutor profile: profileId={}", request.getProfileId());
+
         TutorProfile profile = tutorProfileRepository.findById(request.getProfileId())
                 .orElseThrow(() -> new RuntimeException("Tutor profile not found"));
 
         User user = profile.getUser();
 
-        // Validate age if date of birth is being changed
         if (request.getDateOfBirth() != null && !request.getDateOfBirth().equals(profile.getDateOfBirth())) {
             AgeValidator.validateTutorAge(request.getDateOfBirth());
             profile.setDateOfBirth(request.getDateOfBirth());
         }
 
-        // Update all fields (only if provided in request)
         if (request.getFirstName() != null) {
             profile.setFirstName(request.getFirstName());
         }
@@ -107,30 +111,35 @@ public class UserService {
         // Handle profile image update if provided
         if (request.getProfileImage() != null && !request.getProfileImage().isEmpty()) {
             try {
-                // DELETE OLD IMAGE IF EXISTS
                 String oldImageUrl = profile.getProfilePictureUrl();
                 if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
                     fileStorageService.deleteFile(oldImageUrl);
-                    System.out.println("Old image deleted: " + oldImageUrl);
+                    log.debug("Old image deleted: {}", oldImageUrl);
                 }
-                // Save new image with user ID
                 String imageUrl = fileStorageService.storeProfileImage(request.getProfileImage(), user.getId());
                 profile.setProfilePictureUrl(imageUrl);
+                log.info("New tutor image saved: {}", imageUrl);
             } catch (IOException e) {
+                log.error("Failed to update tutor profile image for profileId={}: {}",
+                        request.getProfileId(), e.getMessage(), e);
                 throw new RuntimeException("Failed to update profile image: " + e.getMessage());
             }
         }
 
-        return tutorProfileRepository.save(profile);
+        TutorProfile saved = tutorProfileRepository.save(profile);
+        log.info("Tutor profile updated: profileId={}", saved.getId());
+        return saved;
     }
 
-    // Step 2: create user with role-based account status
+    // ============================================================
+    // REGISTER USER (temp — signup step)
+    // ============================================================
     public User registerUser(RoleSignupRequest request) {
-        // Normalize email FIRST
         String normalizedEmail = request.getEmail().toLowerCase().trim();
+        log.debug("Registering temp user with email: {}", normalizedEmail);
 
-        // Check if email already exists in database
         if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            log.warn("Registration attempt with existing email: {}", normalizedEmail);
             throw new RuntimeException("Email already exists");
         }
 
@@ -150,26 +159,27 @@ public class UserService {
                 .deletionWarningSent(false)
                 .build();
 
-        // Store in temporary cache with normalized email
         temporaryUserCache.put(normalizedEmail, user);
 
-        // Send OTP using normalized email
         emailVerificationService.sendOtp(normalizedEmail);
+        log.info("Temp user cached and OTP sent: {}", normalizedEmail);
         return user;
     }
 
-    // Step 3: complete profile
+    // ============================================================
+    // COMPLETE TUTOR PROFILE (signup step 2)
+    // ============================================================
     @Transactional
     public TutorProfile completeTutorProfile(TutorProfileRequest request) {
+        log.debug("Completing tutor profile for userId={}", request.getUserId());
+
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        //  - Email verification check
         if (!user.isEmailVerified()) {
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
 
-        // In completeTutorProfile method:
         if (user.getRole() == Role.TUTOR) {
             AgeValidator.validateTutorAge(request.getDateOfBirth());
         }
@@ -177,10 +187,7 @@ public class UserService {
         user.setRegistrationStep(2);
         user.setDeleteAt(null);
         user.setDeletionWarningSent(false);
-
         userRepository.save(user);
-
-
 
         TutorProfile profile = TutorProfile.builder()
                 .user(user)
@@ -196,60 +203,63 @@ public class UserService {
                 .workExperience(request.getWorkExperience())
                 .build();
 
-        return tutorProfileRepository.save(profile);
+        TutorProfile saved = tutorProfileRepository.save(profile);
+        log.info("Tutor profile completed: profileId={}, userId={}", saved.getId(), user.getId());
+        return saved;
     }
 
+    // ============================================================
+    // CHANGE PASSWORD
+    // ============================================================
     @Transactional
-    public void changePassword(ChangePasswordRequest request) {  // ← Parameter type must match
-        // Validate passwords match
+    public void changePassword(ChangePasswordRequest request) {
+        log.debug("Changing password for userId={}", request.getUserId());
+
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("New password and confirm password do not match");
         }
 
-        // Find user
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Verify current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            log.warn("Incorrect current password attempt for userId={}", request.getUserId());
             throw new RuntimeException("Current password is incorrect");
         }
 
-        // Set new password
         String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
         user.setPasswordHash(newPasswordHash);
-
         userRepository.save(user);
+
+        log.info("Password changed for userId={}", user.getId());
     }
 
-    // Check if email is verified before profile creation
-//    public boolean isEmailVerified(String email) {
-//        return emailVerificationService.isEmailVerified(email);
-//    }
-
-    //  Verify OTP and save user to database
+    // ============================================================
+    // VERIFY OTP AND SAVE USER (signup step 3)
+    // ============================================================
     @Transactional
     public User verifyAndSaveUser(String email, String otpCode) {
         String normalizedEmail = email.toLowerCase().trim();
+        log.debug("Verifying OTP for email: {}", normalizedEmail);
 
         User tempUser = temporaryUserCache.get(normalizedEmail);
 
         if (tempUser == null) {
+            log.warn("No pending registration found for: {}", normalizedEmail);
             throw new RuntimeException("No pending registration. Please sign up again.");
         }
 
         try {
-            // Verify OTP using existing service
             boolean isVerified = emailVerificationService.verifyOtp(normalizedEmail, otpCode);
 
             if (!isVerified) {
                 throw new RuntimeException("Invalid OTP code");
             }
         } catch (Exception e) {
+            log.error("OTP verification failed for {}: {}", normalizedEmail, e.getMessage(), e);
             throw new RuntimeException("OTP verification failed: " + e.getMessage());
         }
 
-        // Prepare for database save
         tempUser.setRegistrationStep(1);
         tempUser.setEmailVerified(true);
 
@@ -262,8 +272,8 @@ public class UserService {
         User savedUser = userRepository.save(tempUser);
         temporaryUserCache.remove(normalizedEmail);
 
+        log.info("User saved after OTP verification: userId={}, email={}",
+                savedUser.getId(), normalizedEmail);
         return savedUser;
     }
-
 }
-

@@ -7,10 +7,13 @@ import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.model.enums.ConnectionStatus;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentTutorProfileService {
@@ -22,34 +25,31 @@ public class StudentTutorProfileService {
     private final FavoriteService favoriteService;
     private final BlockService blockService;
 
+    // ============================================================
+    // GET TUTOR PROFILE (as seen by student)
+    // ============================================================
     public StudentTutorProfile getTutorProfileForStudent(Long studentId, Long tutorId) {
-        // Get tutor info
+        log.debug("Building tutor profile for student {} viewing tutor {}", studentId, tutorId);
+
         TutorProfile tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new RuntimeException("Tutor not found"));
 
-        // ============ CHECK IF TUTOR IS BLOCKED ============
         boolean isBlocked = blockService.isTutorBlocked(studentId, tutorId);
 
-        // Get student's favorite course IDs
         List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
 
-        // Get tutor's full name
         String tutorFullName = tutor.getFirstName() + " " + tutor.getLastName();
 
-        // Get tutor's courses (only available ones for students)
         List<Course> courses = courseRepository.findByTutorProfileIdAndIsAvailableTrue(tutorId);
 
-        // Calculate tutor stats
         Double avgRating = ratingRepository.getAverageRatingForTutor(tutorId);
         Integer totalRatings = ratingRepository.getRatingCountForTutor(tutorId);
 
-        // Count total students across all courses
         int totalStudents = courses.stream()
                 .mapToInt(course -> connectionRepository.findByCourseIdAndStatus(
                         course.getId(), ConnectionStatus.CONFIRMED).size())
                 .sum();
 
-        // Convert courses to StudentCourseCard DTOs with favorite status
         List<StudentCourseCard> courseDTOs = courses.stream()
                 .map(course -> {
                     Double courseAvg = ratingRepository.getAverageRatingForCourse(course.getId());
@@ -68,7 +68,9 @@ public class StudentTutorProfileService {
                 })
                 .collect(Collectors.toList());
 
-        // Build and return the complete profile
+        log.debug("Tutor profile built — tutorId={}, courses={}, totalStudents={}, avgRating={}",
+                tutorId, courseDTOs.size(), totalStudents, avgRating);
+
         return StudentTutorProfile.builder()
                 .tutorId(tutor.getId())
                 .tutorUserId(tutor.getUser().getId())

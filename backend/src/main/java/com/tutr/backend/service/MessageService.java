@@ -100,7 +100,7 @@ public class MessageService {
         return response;
     }
 
-    // ✅ FIXED: Added userId parameter
+    // Added userId parameter
     @Transactional(readOnly = true)
     public List<MessageResponse> getMessages(Long roomId, Long userId, int page, int size) {
         log.debug("Getting messages for room: {}, user: {}, page: {}, size: {}", roomId, userId, page, size);
@@ -108,7 +108,7 @@ public class MessageService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
 
-        // ✅ Use findMessagesForUser with userId
+        // Use findMessagesForUser with userId
         List<Message> messages = messageRepository
                 .findMessagesForUser(chatRoom, userId, PageRequest.of(page, size));
 
@@ -185,7 +185,7 @@ public class MessageService {
         User sender = message.getSender();
         User recipient = message.getRecipient();
 
-        // ✅ Fetch reply parent info if exists
+        //  Fetch reply parent info if exists
         Long replyToId = message.getReplyToMessageId();
         String replyToContent = null;
         String replyToSenderName = null;

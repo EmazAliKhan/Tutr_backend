@@ -7,10 +7,12 @@ import com.tutr.backend.model.entity.StudentProfile;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentDashboardService {
@@ -20,28 +22,29 @@ public class StudentDashboardService {
     private final BlockService blockService;
 
     public StudentDashboard getStudentDashboard(Long studentId) {
+        log.debug("Building student dashboard for studentId={}", studentId);
+
         StudentProfile student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        //  Get account status from user
         User user = student.getUser();
         String accountStatus = user.getAccountStatus() != null
                 ? user.getAccountStatus().toString()
                 : "UNKNOWN";
 
-        // Get blocked tutors for this student
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
 
-        // Get top tutors (filter out blocked ones)
         List<TopTutor> allTopTutors = ratingService.getTopTutors(5);
         List<TopTutor> filteredTopTutors = allTopTutors.stream()
                 .filter(tutor -> !blockedTutorIds.contains(tutor.getTutorId()))
                 .limit(5)
                 .collect(Collectors.toList());
 
-        // Get recommended courses (already filtered in the method)
         List<RecommendedCourse> recommendedCourses = ratingService
-                .getRecommendedCoursesForStudent(studentId, 5);// limit 5
+                .getRecommendedCoursesForStudent(studentId, 5);
+
+        log.debug("Student dashboard built — studentId={}, tutors={}, courses={}",
+                studentId, filteredTopTutors.size(), recommendedCourses.size());
 
         return StudentDashboard.builder()
                 .studentId(studentId)

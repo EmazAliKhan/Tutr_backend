@@ -5,6 +5,7 @@ import com.tutr.backend.model.entity.User;
 import com.tutr.backend.repository.EmailVerificationRepository;
 import com.tutr.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
@@ -29,12 +31,17 @@ public class EmailVerificationService {
     private String fromEmail;
 
     private final SecureRandom random = new SecureRandom();
-    // Generate 4-digit OTP
+
+    // ============================================================
+    // HELPER — OTP GENERATION
+    // ============================================================
     private String generateOtp() {
         return String.format("%04d", random.nextInt(10000));
     }
 
-    // ========== FOR SIGNUP / REGISTRATION VERIFICATION ==========
+    // ============================================================
+    // SIGNUP / REGISTRATION VERIFICATION — SEND OTP
+    // ============================================================
     @Transactional
     public void sendOtp(String email) {
         String otp = generateOtp();
@@ -50,7 +57,7 @@ public class EmailVerificationService {
             verification.setVerified(false);
             verification.setLastOtpSentAt(now);
             verificationRepository.save(verification);
-            System.out.println("OTP updated for existing email: " + email);
+            log.debug("OTP updated for existing email: {}", email);
         } else {
             EmailVerification verification = EmailVerification.builder()
                     .email(email)
@@ -60,14 +67,15 @@ public class EmailVerificationService {
                     .lastOtpSentAt(now)
                     .build();
             verificationRepository.save(verification);
-            System.out.println("New OTP created for email: " + email);
+            log.debug("New OTP created for email: {}", email);
         }
 
-        // Send SIGNUP email
         sendSignupVerificationEmail(email, otp);
     }
 
-    // SIGNUP email message
+    // ============================================================
+    // SIGNUP VERIFICATION EMAIL — Emojis preserved
+    // ============================================================
     private void sendSignupVerificationEmail(String toEmail, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -104,10 +112,12 @@ public class EmailVerificationService {
 
         message.setText(emailBody);
         mailSender.send(message);
-        System.out.println("SIGNUP OTP email sent to: " + toEmail + " | OTP: " + otp);
+        log.info("Signup OTP email sent to: {}", toEmail);
     }
 
-    // ========== FOR FORGOT PASSWORD ==========
+    // ============================================================
+    // FORGOT PASSWORD — SEND OTP
+    // ============================================================
     @Transactional
     public void sendForgotPasswordOtp(String email) {
         String otp = generateOtp();
@@ -123,7 +133,7 @@ public class EmailVerificationService {
             verification.setVerified(false);
             verification.setLastOtpSentAt(now);
             verificationRepository.save(verification);
-            System.out.println("Forgot password OTP updated for email: " + email);
+            log.debug("Forgot password OTP updated for email: {}", email);
         } else {
             EmailVerification verification = EmailVerification.builder()
                     .email(email)
@@ -133,14 +143,15 @@ public class EmailVerificationService {
                     .lastOtpSentAt(now)
                     .build();
             verificationRepository.save(verification);
-            System.out.println("New forgot password OTP created for email: " + email);
+            log.debug("New forgot password OTP created for email: {}", email);
         }
 
-        // Send FORGOT PASSWORD email
         sendForgotPasswordEmail(email, otp);
     }
 
-    // FORGOT PASSWORD email message
+    // ============================================================
+    // FORGOT PASSWORD EMAIL — Emojis preserved
+    // ============================================================
     private void sendForgotPasswordEmail(String toEmail, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -167,12 +178,12 @@ public class EmailVerificationService {
 
         message.setText(emailBody);
         mailSender.send(message);
-        System.out.println("FORGOT PASSWORD OTP email sent to: " + toEmail + " | OTP: " + otp);
+        log.info("Forgot password OTP email sent to: {}", toEmail);
     }
 
-    // ========== COMMON METHODS ==========
-
-    // Verify OTP (for both signup and forgot password)
+    // ============================================================
+    // COMMON — VERIFY OTP (signup + forgot password)
+    // ============================================================
     @Transactional
     public boolean verifyOtp(String email, String otpCode) {
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
@@ -192,6 +203,7 @@ public class EmailVerificationService {
         }
 
         if (!verification.getOtpCode().equals(otpCode)) {
+            log.warn("Invalid OTP attempt for email: {}", email);
             throw new RuntimeException("Invalid OTP code");
         }
 
@@ -204,41 +216,47 @@ public class EmailVerificationService {
             User user = userOpt.get();
             user.setEmailVerified(true);
             userRepository.save(user);
-            System.out.println("User emailVerified set to true for: " + email);
+            log.debug("User emailVerified set to true for: {}", email);
         } else {
-            // User not in DB yet (temporary user during signup) - this is fine
-            System.out.println("OTP verified for temporary user (not yet in database): " + email);
+            log.debug("OTP verified for temporary user (not yet in database): {}", email);
         }
 
-        System.out.println("OTP verified successfully for email: " + email);
-
+        log.info("OTP verified successfully for email: {}", email);
         return true;
     }
 
-    // Check if email is verified
+    // ============================================================
+    // CHECK — Is email verified?
+    // ============================================================
     public boolean isEmailVerified(String email) {
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
         return existing.map(EmailVerification::isVerified).orElse(false);
     }
 
-    // Resend OTP (for signup)
+    // ============================================================
+    // RESEND — Signup OTP
+    // ============================================================
     @Transactional
     public void resendOtp(String email) {
         if (isEmailVerified(email)) {
             throw new RuntimeException("Email already verified");
         }
         sendOtp(email);
-        System.out.println("Signup OTP resent to: " + email);
+        log.debug("Signup OTP resent to: {}", email);
     }
 
-    // Resend OTP for forgot password
+    // ============================================================
+    // RESEND — Forgot password OTP
+    // ============================================================
     @Transactional
     public void resendForgotPasswordOtp(String email) {
         sendForgotPasswordOtp(email);
-        System.out.println("Forgot password OTP resent to: " + email);
+        log.debug("Forgot password OTP resent to: {}", email);
     }
 
-    // Reset password after OTP verified
+    // ============================================================
+    // RESET PASSWORD — After OTP verified
+    // ============================================================
     @Transactional
     public void resetPassword(String email, String newPassword, String confirmPassword) {
         if (!newPassword.equals(confirmPassword)) {
@@ -257,10 +275,12 @@ public class EmailVerificationService {
 
         verificationRepository.deleteByEmail(email);
 
-        System.out.println("Password reset successfully for email: " + email);
+        log.info("Password reset successfully for email: {}", email);
     }
 
-    // Reset OTP expiry (extend by 3 more minutes)
+    // ============================================================
+    // EXTEND OTP EXPIRY — By 3 more minutes
+    // ============================================================
     @Transactional
     public void extendOtpExpiry(String email) {
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
@@ -269,19 +289,22 @@ public class EmailVerificationService {
             EmailVerification verification = existing.get();
             verification.setExpiryTime(LocalDateTime.now().plusMinutes(3));
             verificationRepository.save(verification);
-            System.out.println("OTP expiry extended for email: " + email);
+            log.debug("OTP expiry extended for email: {}", email);
         } else {
             throw new RuntimeException("No OTP found for this email");
         }
     }
 
-    // Get remaining OTP expiry time in minutes
+    // ============================================================
+    // GET — Remaining OTP expiry in minutes
+    // ============================================================
     public long getRemainingExpiryMinutes(String email) {
         Optional<EmailVerification> existing = verificationRepository.findByEmail(email);
 
         if (existing.isPresent()) {
             EmailVerification verification = existing.get();
-            long minutesRemaining = java.time.Duration.between(LocalDateTime.now(), verification.getExpiryTime()).toMinutes();
+            long minutesRemaining = java.time.Duration.between(
+                    LocalDateTime.now(), verification.getExpiryTime()).toMinutes();
             return Math.max(0, minutesRemaining);
         }
 

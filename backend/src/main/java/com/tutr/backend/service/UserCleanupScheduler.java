@@ -5,6 +5,7 @@ import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserCleanupScheduler {
@@ -23,24 +25,26 @@ public class UserCleanupScheduler {
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
 
+    // ============================================================
+    // SCHEDULED CLEANUP — runs every hour
+    // ============================================================
     @Scheduled(fixedDelay = 3600000)
     @Transactional
     public void deleteIncompleteUsers() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime cutoffDate = now.minusDays(10);
 
-        System.out.println("Running UserCleanupScheduler at: " + now);
-        System.out.println("Deleting users created before: " + cutoffDate);
+        log.info("Running UserCleanupScheduler — cutoff: {}", cutoffDate);
 
         try {
             List<User> incompleteUsers = userRepository.findIncompleteUsers(cutoffDate);
 
             if (incompleteUsers.isEmpty()) {
-                System.out.println("No incomplete users found for deletion.");
+                log.info("No incomplete users found for deletion");
                 return;
             }
 
-            System.out.println("Found " + incompleteUsers.size() + " incomplete users to process.");
+            log.info("Found {} incomplete users to process", incompleteUsers.size());
 
             for (User user : incompleteUsers) {
                 if (user.getAccountStatus() == AccountStatus.INACTIVE ||
@@ -49,7 +53,7 @@ public class UserCleanupScheduler {
                 }
 
                 if (isRegistrationComplete(user)) {
-                    System.out.println("User " + user.getEmail() + " has completed registration. Skipping.");
+                    log.debug("User {} has completed registration — skipping", user.getEmail());
                     continue;
                 }
 
@@ -59,18 +63,20 @@ public class UserCleanupScheduler {
                         sendWarningEmail(user);
                         user.setDeletionWarningSent(true);
                         userRepository.save(user);
-                        System.out.println("Warning email sent to: " + user.getEmail());
+                        log.info("Warning email sent to: {}", user.getEmail());
                     }
                 } else {
                     deleteUserAndAssociatedData(user);
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error in UserCleanupScheduler: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in UserCleanupScheduler: {}", e.getMessage(), e);
         }
     }
 
+    // ============================================================
+    // CHECK — Registration complete?
+    // ============================================================
     private boolean isRegistrationComplete(User user) {
         if (user.getRole() == Role.STUDENT) {
             return user.getRegistrationStep() >= 2;
@@ -80,6 +86,9 @@ public class UserCleanupScheduler {
         return false;
     }
 
+    // ============================================================
+    // SEND WARNING EMAIL (Day 9)
+    // ============================================================
     private void sendWarningEmail(User user) {
         String remainingSteps = getRemainingStepsMessage(user);
         emailService.sendDeletionWarningEmail(user.getEmail(), user.getRole(), remainingSteps);
@@ -103,58 +112,57 @@ public class UserCleanupScheduler {
         }
     }
 
+    // ============================================================
+    // DELETE USER + ASSOCIATED DATA (Day 10)
+    // ============================================================
     private void deleteUserAndAssociatedData(User user) {
-        System.out.println("Deleting user: " + user.getEmail() +
-                " (Role: " + user.getRole() +
-                ", Step: " + user.getRegistrationStep() +
-                ", Created: " + user.getCreatedAt() + ")");
+        log.info("Deleting user {} (role={}, step={}, createdAt={})",
+                user.getEmail(), user.getRole(), user.getRegistrationStep(), user.getCreatedAt());
 
         try {
             if (user.getRole() == Role.TUTOR) {
                 tutorProfileRepository.findByUser(user).ifPresent(tutorProfile -> {
-
-                    //  Delete tutor profile picture from folder
                     String profilePicUrl = tutorProfile.getProfilePictureUrl();
                     if (profilePicUrl != null && !profilePicUrl.isEmpty()) {
                         try {
                             fileStorageService.deleteFile(profilePicUrl);
-                            System.out.println("Deleted profile picture for tutor: " + user.getEmail());
+                            log.debug("Deleted profile picture for tutor: {}", user.getEmail());
                         } catch (Exception e) {
-                            System.err.println("Failed to delete profile picture: " + e.getMessage());
+                            log.error("Failed to delete profile picture for {}: {}",
+                                    user.getEmail(), e.getMessage(), e);
                         }
                     }
 
-                    // ✅ Delete tutor profile (database)
                     tutorProfileRepository.delete(tutorProfile);
-                    System.out.println("Deleted tutor profile for: " + user.getEmail());
+                    log.debug("Deleted tutor profile for: {}", user.getEmail());
                 });
             } else if (user.getRole() == Role.STUDENT) {
                 studentProfileRepository.findByUser(user).ifPresent(studentProfile -> {
                     studentProfileRepository.delete(studentProfile);
-                    System.out.println("Deleted student profile for: " + user.getEmail());
+                    log.debug("Deleted student profile for: {}", user.getEmail());
                 });
             }
 
-            // ✅ Delete documents (database only) - using findByUser
             tutorDocumentsRepository.findByUser(user).ifPresent(docs -> {
                 tutorDocumentsRepository.delete(docs);
-                System.out.println("Deleted documents record for tutor: " + user.getEmail());
+                log.debug("Deleted documents record for: {}", user.getEmail());
             });
 
-            // ✅ Delete user (database)
             userRepository.delete(user);
             emailService.sendDeletionConfirmationEmail(user.getEmail());
 
-            System.out.println("User deleted permanently: " + user.getEmail());
+            log.info("User deleted permanently: {}", user.getEmail());
         } catch (Exception e) {
-            System.err.println("Error deleting user " + user.getEmail() + ": " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error deleting user {}: {}", user.getEmail(), e.getMessage(), e);
         }
     }
 
+    // ============================================================
+    // MANUAL CLEANUP TRIGGER
+    // ============================================================
     @Transactional
     public void manualCleanup() {
-        System.out.println("Manual cleanup triggered...");
+        log.info("Manual cleanup triggered");
         deleteIncompleteUsers();
     }
 }

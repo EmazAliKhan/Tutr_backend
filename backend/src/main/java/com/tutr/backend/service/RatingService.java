@@ -14,6 +14,7 @@ import com.tutr.backend.model.enums.CourseCategory;
 import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RatingService {
@@ -37,10 +39,14 @@ public class RatingService {
     private final BlockService blockService;
     private final FavoriteService favoriteService;
 
-    // ============ STUDENT RATING METHODS ============
+    // ============================================================
+    // STUDENT RATING METHODS
+    // ============================================================
 
     @Transactional
     public RatingResponse submitRatingWithConnection(RatingRequest request) {
+        log.debug("Submitting rating with connectionId={} by student", request.getConnectionId());
+
         if (request.getRating() < 1 || request.getRating() > 5) {
             throw new RuntimeException("Rating must be between 1 and 5 stars");
         }
@@ -54,6 +60,7 @@ public class RatingService {
         }
 
         if (ratingRepository.existsByConnectionId(request.getConnectionId())) {
+            log.warn("Duplicate rating attempt for connection {}", request.getConnectionId());
             throw new RuntimeException("You have already rated this connection");
         }
 
@@ -68,6 +75,8 @@ public class RatingService {
                 .build();
 
         RatingReview savedRating = ratingRepository.save(rating);
+        log.info("Rating submitted: id={}, connectionId={}, rating={}",
+                savedRating.getId(), request.getConnectionId(), request.getRating());
 
         return RatingResponse.builder()
                 .id(savedRating.getId())
@@ -83,6 +92,9 @@ public class RatingService {
 
     @Transactional
     public RatingResponse submitRatingWithoutConnection(RatingRequest request) {
+        log.debug("Submitting rating without connection — studentId={}, courseId={}",
+                request.getStudentId(), request.getCourseId());
+
         if (request.getRating() < 1 || request.getRating() > 5) {
             throw new RuntimeException("Rating must be between 1 and 5 stars");
         }
@@ -94,6 +106,8 @@ public class RatingService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
         if (ratingRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
+            log.warn("Duplicate rating attempt — student {} already rated course {}",
+                    student.getId(), course.getId());
             throw new RuntimeException("You have already rated this course");
         }
 
@@ -107,6 +121,8 @@ public class RatingService {
                 .build();
 
         RatingReview savedRating = ratingRepository.save(rating);
+        log.info("Rating submitted: id={}, studentId={}, courseId={}",
+                savedRating.getId(), student.getId(), course.getId());
 
         return RatingResponse.builder()
                 .id(savedRating.getId())
@@ -122,6 +138,8 @@ public class RatingService {
 
     @Transactional
     public RatingResponse updateRating(Long ratingId, RatingRequest request) {
+        log.debug("Updating rating id={}", ratingId);
+
         if (request.getRating() < 1 || request.getRating() > 5) {
             throw new RuntimeException("Rating must be between 1 and 5 stars");
         }
@@ -134,6 +152,7 @@ public class RatingService {
         rating.setUpdatedAt(LocalDateTime.now());
 
         RatingReview updatedRating = ratingRepository.save(rating);
+        log.info("Rating updated: id={}", ratingId);
 
         return RatingResponse.builder()
                 .id(updatedRating.getId())
@@ -148,7 +167,9 @@ public class RatingService {
                 .build();
     }
 
-    // ============ TUTOR DASHBOARD METHODS ============
+    // ============================================================
+    // TUTOR DASHBOARD METHODS
+    // ============================================================
 
     public TutorRatingSummary getTutorRatingSummary(Long tutorId, CourseCategory category, TeachingMode teachingMode) {
         TutorProfile tutor = tutorProfileRepository.findById(tutorId)
@@ -253,8 +274,7 @@ public class RatingService {
                 }
             }
 
-            Course course = courseRepository.findById(courseId)
-                    .orElse(null);
+            Course course = courseRepository.findById(courseId).orElse(null);
 
             if (course != null) {
                 TopCourse dto = TopCourse.builder()
@@ -275,7 +295,10 @@ public class RatingService {
         return topCourses;
     }
 
-    // ============ RECOMMENDED COURSES WITH BLOCKING ============
+    // ============================================================
+    // RECOMMENDED COURSES (with blocking)
+    // ============================================================
+
     public List<RecommendedCourse> getRecommendedCoursesForStudent(Long studentId, int limit) {
         StudentProfile student = studentProfileRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -284,7 +307,7 @@ public class RatingService {
         List<Long> favoriteCourseIds = favoriteService.getFavoriteCourseIds(studentId);
 
         String studentLocation = student.getLocation();
-        System.out.println("Finding recommendations for student in: " + studentLocation);
+        log.debug("Finding recommendations for student {} in location: {}", studentId, studentLocation);
 
         List<Object[]> results = courseRepository.findRecommendedCourses(studentLocation);
 
@@ -300,7 +323,6 @@ public class RatingService {
 
             Course course = (Course) row[0];
 
-            // ✅ Safe cast — AVG() may return Double, BigDecimal, Long, or null
             Double avgRating = 0.0;
             if (row[1] != null) {
                 if (row[1] instanceof BigDecimal) {
@@ -316,7 +338,6 @@ public class RatingService {
                 continue;
             }
 
-            // ✅ Skip if tutor account is INACTIVE
             TutorProfile tutor = course.getTutorProfile();
             if (tutor == null || tutor.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
                 continue;
@@ -340,12 +361,14 @@ public class RatingService {
 
             recommendations.add(dto);
         }
-        System.out.println("✅ Returning " + recommendations.size() + " recommendations");
 
+        log.debug("Returning {} recommendations for student {}", recommendations.size(), studentId);
         return recommendations;
     }
 
-    // ============ TOP TUTORS METHODS ============
+    // ============================================================
+    // TOP TUTORS
+    // ============================================================
 
     public List<TopTutor> getTopTutorsForStudent(Long studentId, int limit) {
         List<Long> blockedTutorIds = blockService.getBlockedTutorIds(studentId);
@@ -363,7 +386,6 @@ public class RatingService {
                     continue;
                 }
 
-                // ✅ Skip if tutor account is INACTIVE
                 TutorProfile tutorProfile = tutorProfileRepository.findById(tutorId).orElse(null);
                 if (tutorProfile == null || tutorProfile.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
                     continue;
@@ -438,9 +460,7 @@ public class RatingService {
 
                 TutorProfile tutor = tutorProfileRepository.findById(tutorId).orElse(null);
 
-                //  Skip if tutor is INACTIVE or not found
-                if (tutor == null
-                        || tutor.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
+                if (tutor == null || tutor.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
                     continue;
                 }
 
@@ -485,7 +505,6 @@ public class RatingService {
                 continue;
             }
 
-            // ✅ Skip if tutor account is INACTIVE (self-deactivated)
             TutorProfile tutorProfile = tutorProfileRepository.findById(tutorId).orElse(null);
             if (tutorProfile == null || tutorProfile.getUser().getAccountStatus() == AccountStatus.INACTIVE) {
                 continue;
@@ -515,7 +534,9 @@ public class RatingService {
         return tutors;
     }
 
-    // ============ Get course reviews with summary ============
+    // ============================================================
+    // COURSE REVIEWS
+    // ============================================================
 
     public CourseReviewsResponse getCourseReviewsWithSummary(Long courseId) {
         Course course = courseRepository.findById(courseId)
@@ -539,7 +560,9 @@ public class RatingService {
                 .build();
     }
 
-    // ============ TUTOR REVIEW DETAIL METHODS ============
+    // ============================================================
+    // TUTOR REVIEW DETAIL
+    // ============================================================
 
     public TutorReviewDetail getTutorReviewDetail(Long reviewId) {
         RatingReview review = ratingRepository.findById(reviewId)
@@ -569,7 +592,9 @@ public class RatingService {
                 .build();
     }
 
-    // ============ HELPER METHODS ============
+    // ============================================================
+    // HELPER METHODS
+    // ============================================================
 
     private Map<Integer, Integer> buildRatingDistribution(List<RatingReview> ratings) {
         Map<Integer, Integer> distribution = new HashMap<>();

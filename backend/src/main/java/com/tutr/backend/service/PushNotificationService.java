@@ -58,7 +58,7 @@ public class PushNotificationService {
                            String body,
                            Map<String, String> data) {
 
-        // ✅ 1. Save to history FIRST and get the DB ID
+        //  1. Save to history FIRST and get the DB ID
         Long notificationId = null;
         try {
             String type = data.getOrDefault("type", "general");
@@ -77,7 +77,7 @@ public class PushNotificationService {
             log.warn("Failed to save notification history: {}", e.getMessage());
         }
 
-        // ✅ 2. Build a MUTABLE copy of the data map
+        //  2. Build a MUTABLE copy of the data map
         //    (the original might be Map.of() which is immutable)
         Map<String, String> mutableData = new HashMap<>(data);
         if (notificationId != null) {
@@ -85,7 +85,7 @@ public class PushNotificationService {
             mutableData.put("id", String.valueOf(notificationId));
         }
 
-        // ✅ 3. Send push
+        //  3. Send push
         List<DeviceToken> tokens = tokenRepo.findByUserId(userId);
         if (tokens.isEmpty()) {
             log.info("No device tokens for user {} — saved to history only", userId);
@@ -103,7 +103,7 @@ public class PushNotificationService {
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .putAllData(mutableData)         // 👈 use mutable map
+                    .putAllData(mutableData)
                     .setAndroidConfig(AndroidConfig.builder()
                             .setPriority(AndroidConfig.Priority.HIGH)
                             .setNotification(AndroidNotification.builder()
@@ -116,7 +116,7 @@ public class PushNotificationService {
             BatchResponse response = FirebaseMessaging.getInstance()
                     .sendEachForMulticast(message);
 
-            log.info("📤 Push sent to user {}: {} success, {} failed",
+            log.info(" Push sent to user {}: {} success, {} failed",
                     userId, response.getSuccessCount(), response.getFailureCount());
 
             if (response.getFailureCount() > 0) {

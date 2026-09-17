@@ -8,12 +8,14 @@ import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.model.enums.ReportStatus;
 import com.tutr.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BlockService {
@@ -27,20 +29,19 @@ public class BlockService {
 
     @Transactional
     public String blockTutor(Long studentId, Long tutorId) {
-        // Check if student exists
+        log.debug("Blocking tutor {} for student {}", tutorId, studentId);
+
         StudentProfile student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        // Check if tutor exists
         TutorProfile tutor = tutorProfileRepository.findById(tutorId)
                 .orElseThrow(() -> new RuntimeException("Tutor not found"));
 
-        // Check if already blocked
         if (blockedRepository.existsByStudentIdAndTutorId(studentId, tutorId)) {
+            log.warn("Tutor {} is already blocked by student {}", tutorId, studentId);
             throw new RuntimeException("Tutor already blocked");
         }
 
-        // Create block entity - using correct field names from entity
         com.tutr.backend.model.entity.BlockedTutor blockEntity = com.tutr.backend.model.entity.BlockedTutor.builder()
                 .student(student)
                 .tutor(tutor)
@@ -49,29 +50,34 @@ public class BlockService {
 
         blockedRepository.save(blockEntity);
 
+        log.info("Tutor {} blocked by student {}", tutorId, studentId);
         return "Tutor blocked successfully";
     }
 
     @Transactional
     public String unblockTutor(Long studentId, Long tutorId) {
-        // Check if exists
+        log.debug("Unblocking tutor {} for student {}", tutorId, studentId);
+
         if (!blockedRepository.existsByStudentIdAndTutorId(studentId, tutorId)) {
+            log.warn("Attempt to unblock tutor {} by student {} but no block exists", tutorId, studentId);
             throw new RuntimeException("Tutor not in blocked list");
         }
 
         blockedRepository.deleteByStudentIdAndTutorId(studentId, tutorId);
 
+        log.info("Tutor {} unblocked by student {}", tutorId, studentId);
         return "Tutor unblocked successfully";
     }
 
     public List<BlockedTutor> getBlockedTutors(Long studentId) {
-        // Verify student exists
         if (!studentRepository.existsById(studentId)) {
             throw new RuntimeException("Student not found");
         }
 
         List<com.tutr.backend.model.entity.BlockedTutor> blockedEntities =
                 blockedRepository.findByStudentId(studentId);
+
+        log.debug("Fetched {} blocked tutors for student {}", blockedEntities.size(), studentId);
 
         return blockedEntities.stream()
                 .map(entity -> {
@@ -100,25 +106,24 @@ public class BlockService {
 
     @Transactional
     public TutorReport reportTutor(ReportTutorRequest request) {
-        // Validate request
+        log.debug("Reporting tutor {} by student {}", request.getTutorId(), request.getStudentId());
+
         if (request.getStudentId() == null || request.getTutorId() == null || request.getReason() == null) {
             throw new RuntimeException("Student ID, Tutor ID, and Reason are required");
         }
 
-        // Check if student exists
         StudentProfile student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        // Check if tutor exists
         TutorProfile tutor = tutorProfileRepository.findById(request.getTutorId())
                 .orElseThrow(() -> new RuntimeException("Tutor not found"));
 
-        // Check if already reported (prevent spam)
         if (reportRepository.existsByStudentIdAndTutorId(request.getStudentId(), request.getTutorId())) {
+            log.warn("Duplicate report attempt — student {} already reported tutor {}",
+                    request.getStudentId(), request.getTutorId());
             throw new RuntimeException("You have already reported this tutor");
         }
 
-        // Create report entity
         com.tutr.backend.model.entity.TutorReport reportEntity = com.tutr.backend.model.entity.TutorReport.builder()
                 .student(student)
                 .tutor(tutor)
@@ -130,11 +135,13 @@ public class BlockService {
 
         com.tutr.backend.model.entity.TutorReport savedEntity = reportRepository.save(reportEntity);
 
+        log.info("Tutor {} reported by student {} — reportId: {}",
+                request.getTutorId(), request.getStudentId(), savedEntity.getId());
+
         return convertToReportDTO(savedEntity);
     }
 
     public List<TutorReport> getStudentReports(Long studentId) {
-        // Verify student exists
         if (!studentRepository.existsById(studentId)) {
             throw new RuntimeException("Student not found");
         }

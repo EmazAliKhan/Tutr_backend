@@ -2,11 +2,13 @@ package com.tutr.backend.service;
 
 import com.tutr.backend.model.enums.Role;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -16,8 +18,12 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    //  Warning email (Day 9)
+    // ============================================================
+    // WARNING EMAIL (Day 9)
+    // ============================================================
     public void sendDeletionWarningEmail(String email, Role role, String remainingSteps) {
+        log.debug("Preparing deletion warning email for: {}", email);
+
         String subject = "⚠️ Your TUTR Account Will Be Deleted in 24 Hours";
 
         String message = String.format("""
@@ -42,8 +48,12 @@ public class EmailService {
         sendEmail(email, subject, message);
     }
 
-    //  Deletion confirmation email (Day 10)
+    // ============================================================
+    // DELETION CONFIRMATION EMAIL (Day 10)
+    // ============================================================
     public void sendDeletionConfirmationEmail(String email) {
+        log.debug("Preparing deletion confirmation email for: {}", email);
+
         String subject = " Your TUTR Account Has Been Deleted";
 
         String message = """
@@ -63,6 +73,9 @@ public class EmailService {
         sendEmail(email, subject, message);
     }
 
+    // ============================================================
+    // PRIVATE HELPER — SEND EMAIL
+    // ============================================================
     private void sendEmail(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -71,9 +84,9 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
-            System.out.println("Email sent to: " + to);
+            log.info("Email sent to: {}", to);
         } catch (Exception e) {
-            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
         }
     }
 }

@@ -30,7 +30,7 @@ public class ChatRoomService {
     private final StudentProfileRepository studentProfileRepository;
     private final TutorProfileRepository tutorProfileRepository;
 
-    // ✅ Get or create SHARED chat room (REUSE existing room)
+    //  Get or create SHARED chat room (REUSE existing room)
     @Transactional
     public ChatRoom getOrCreateSharedChatRoom(Long studentUserId, Long tutorUserId) {
         log.info("Getting/Creating shared chat room for student: {}, tutor: {}", studentUserId, tutorUserId);
@@ -67,30 +67,30 @@ public class ChatRoomService {
         return chatRoomRepository.save(chatRoom);
     }
 
-    // ✅ Get user chat rooms
+    //  Get user chat rooms
     @Transactional(readOnly = true)
     public List<ChatRoom> getUserChatRooms(Long userId) {
         log.debug("Getting chat rooms for user: {}", userId);
         return chatRoomRepository.findByUserId(userId);
     }
 
-    // ✅ Get chat room by ID
+    //  Get chat room by ID
     public ChatRoom getChatRoomById(Long chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new RuntimeException("Chat room not found"));
     }
 
-    // ✅ Convert to response with student and tutor details
+    //  Convert to response with student and tutor details
     @Transactional(readOnly = true)
     public ChatRoomResponse convertToResponse(ChatRoom chatRoom, Long currentUserId) {
 
-        // ✅ Fetch student and tutor details
+        //  Fetch student and tutor details
         String studentName = "Student";
         String tutorName = "Tutor";
         String studentImage = null;
         String tutorImage = null;
 
-        // ✅ Get student details by USER ID
+        // Get student details by USER ID
         Optional<StudentProfile> studentOpt = studentProfileRepository.findByUserId(chatRoom.getStudentUserId());
         if (studentOpt.isPresent()) {
             StudentProfile student = studentOpt.get();
@@ -98,7 +98,7 @@ public class ChatRoomService {
             studentImage = student.getProfilePictureUrl();
         }
 
-        // ✅ Get tutor details by USER ID
+        //  Get tutor details by USER ID
         Optional<TutorProfile> tutorOpt = tutorProfileRepository.findByUserId(chatRoom.getTutorUserId());
         if (tutorOpt.isPresent()) {
             TutorProfile tutor = tutorOpt.get();

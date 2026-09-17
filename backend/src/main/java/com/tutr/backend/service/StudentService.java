@@ -13,12 +13,15 @@ import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.repository.TutorStudentConnectionRepository;
 import com.tutr.backend.repository.StudentProfileRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentService {
@@ -26,10 +29,14 @@ public class StudentService {
     private final TutorStudentConnectionRepository connectionRepository;
     private final StudentProfileRepository studentRepository;
 
-    // Get all confirmed students for a tutor (list view)
+    // ============================================================
+    // GET ALL CONFIRMED STUDENTS FOR A TUTOR (list view)
+    // ============================================================
     public List<StudentList> getTutorStudents(Long tutorId) {
         List<TutorStudentConnection> connections = connectionRepository
                 .findByTutorIdAndStatus(tutorId, ConnectionStatus.CONFIRMED);
+
+        log.debug("Fetched {} confirmed students for tutor {}", connections.size(), tutorId);
 
         return connections.stream()
                 .map(conn -> {
@@ -54,15 +61,18 @@ public class StudentService {
                 .collect(Collectors.toList());
     }
 
-
-    // Search students by name for a tutor
+    // ============================================================
+    // SEARCH STUDENTS BY NAME / SUBJECT
+    // ============================================================
     public List<StudentList> searchTutorStudents(Long tutorId, String searchTerm) {
+        log.debug("Searching students for tutor {} with term '{}'", tutorId, searchTerm);
+
         List<TutorStudentConnection> connections = connectionRepository
                 .findByTutorIdAndStatus(tutorId, ConnectionStatus.CONFIRMED);
 
         String lowerSearch = searchTerm.toLowerCase();
 
-        return connections.stream()
+        List<StudentList> result = connections.stream()
                 .filter(conn -> {
                     String studentName = conn.getStudent().getFirstName() + " " + conn.getStudent().getLastName();
                     return studentName.toLowerCase().contains(lowerSearch) ||
@@ -88,10 +98,14 @@ public class StudentService {
                             .build();
                 })
                 .collect(Collectors.toList());
+
+        log.debug("Search returned {} students for tutor {}", result.size(), tutorId);
+        return result;
     }
 
-
-    // Get detailed information for a specific student connection
+    // ============================================================
+    // GET DETAILED INFORMATION FOR A SPECIFIC CONNECTION
+    // ============================================================
     public StudentDetail getStudentDetail(Long connectionId) {
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
@@ -114,7 +128,6 @@ public class StudentService {
                 .schoolName(student.getSchoolName())
                 .collegeName(student.getCollegeName())
 
-
                 // Connection Info
                 .connectionId(connection.getId())
                 .courseId(course.getId())
@@ -129,12 +142,16 @@ public class StudentService {
                 .build();
     }
 
+    // ============================================================
+    // FILTER STUDENTS BY CATEGORY + TEACHING MODE
+    // ============================================================
     public List<StudentFilter> getFilteredStudents(Long tutorId, CourseCategory category, TeachingMode teachingMode) {
-        // Get all confirmed connections for this tutor
+        log.debug("Filtering students for tutor {} — category={}, teachingMode={}",
+                tutorId, category, teachingMode);
+
         List<TutorStudentConnection> connections = connectionRepository
                 .findByTutorIdAndStatus(tutorId, ConnectionStatus.CONFIRMED);
 
-        // Filter connections based on course category and teaching mode
         Stream<TutorStudentConnection> filteredStream = connections.stream();
 
         if (category != null) {
@@ -147,8 +164,7 @@ public class StudentService {
                     conn.getCourse().getTeachingMode() == teachingMode);
         }
 
-        // Convert to DTO with only name and image
-        return filteredStream
+        List<StudentFilter> result = filteredStream
                 .map(conn -> {
                     StudentProfile student = conn.getStudent();
                     return StudentFilter.builder()
@@ -158,5 +174,8 @@ public class StudentService {
                             .build();
                 })
                 .collect(Collectors.toList());
+
+        log.debug("Filter returned {} students for tutor {}", result.size(), tutorId);
+        return result;
     }
 }

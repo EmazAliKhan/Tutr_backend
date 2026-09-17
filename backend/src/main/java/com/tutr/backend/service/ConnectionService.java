@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -39,10 +40,14 @@ public class ConnectionService {
 
     private static final int EXPIRY_HOURS = 48;
 
-    // ============ STUDENT REQUEST WITH 48-HOUR EXPIRY ============
+    // ============================================================
+    // STUDENT REQUEST WITH 48-HOUR EXPIRY
+    // ============================================================
 
     @Transactional
     public TutorStudentConnection requestConnection(ConnectionRequest request) {
+        log.debug("Student {} requesting connection for course {}", request.getStudentId(), request.getCourseId());
+
         Course course = courseRepository.findById(request.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Course not found"));
 
@@ -93,7 +98,10 @@ public class ConnectionService {
 
         TutorStudentConnection saved = connectionRepository.save(builder.build());
 
-        // ✅ Push to tutor
+        log.info("Connection request created: id={}, student={}, course={}, status={}",
+                saved.getId(), student.getId(), course.getId(), saved.getStatus());
+
+        // Push to tutor
         try {
             Long tutorUserId = saved.getTutor().getUser().getId();
             Long studentProfileId = saved.getStudent().getId();
@@ -106,7 +114,7 @@ public class ConnectionService {
                     ? "sent you a request for " + subject + " with offer Rs " + request.getSuggestedPrice() + EXPIRY_HINT
                     : "sent you a connection request for " + subject + EXPIRY_HINT;
 
-            //  If student attached a price → it's a counter/offer, not a plain request
+            // If student attached a price → it's a counter/offer, not a plain request
             String pushType = request.getSuggestedPrice() != null
                     ? "connection_counter"
                     : "connection_request";
@@ -120,10 +128,15 @@ public class ConnectionService {
         return saved;
     }
 
-    // ============ TUTOR RESPOND ============
+    // ============================================================
+    // TUTOR RESPOND
+    // ============================================================
 
     @Transactional
     public TutorStudentConnection tutorRespond(Long connectionId, boolean accept, Double counterOffer) {
+        log.debug("Tutor responding to connection {} — accept={}, counterOffer={}",
+                connectionId, accept, counterOffer);
+
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
@@ -131,6 +144,7 @@ public class ConnectionService {
             connection.setStatus(ConnectionStatus.EXPIRED);
             connection.setIsActive(false);
             connectionRepository.save(connection);
+            log.warn("Expired bid {} — status set to EXPIRED", connectionId);
             throw new RuntimeException("This bid has expired (48 hours passed). Please create a new request.");
         }
 
@@ -176,7 +190,9 @@ public class ConnectionService {
 
         TutorStudentConnection saved = connectionRepository.save(connection);
 
-        // ✅ Push to student
+        log.info("Tutor responded to connection {} — new status: {}", connectionId, saved.getStatus());
+
+        // Push to student
         try {
             Long studentUserId = saved.getStudent().getUser().getId();
             Long tutorProfileId = saved.getTutor().getId();
@@ -206,7 +222,7 @@ public class ConnectionService {
             }
 
             sendPushTo(studentUserId, tutorName + " — " + subject, body, type,
-                    saved.getId(),saved.getCourse().getId(), tutorProfileId, tutorName, tutorImage);
+                    saved.getId(), saved.getCourse().getId(), tutorProfileId, tutorName, tutorImage);
         } catch (Exception e) {
             log.warn("Tutor respond push failed: {}", e.getMessage());
         }
@@ -214,10 +230,15 @@ public class ConnectionService {
         return saved;
     }
 
-    // ============ STUDENT RESPOND TO COUNTER ============
+    // ============================================================
+    // STUDENT RESPOND TO COUNTER
+    // ============================================================
 
     @Transactional
     public TutorStudentConnection studentRespondToCounter(Long connectionId, boolean accept, Double newOffer) {
+        log.debug("Student responding to counter {} — accept={}, newOffer={}",
+                connectionId, accept, newOffer);
+
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
@@ -225,6 +246,7 @@ public class ConnectionService {
             connection.setStatus(ConnectionStatus.EXPIRED);
             connection.setIsActive(false);
             connectionRepository.save(connection);
+            log.warn("Expired bid {} — status set to EXPIRED", connectionId);
             throw new RuntimeException("This bid has expired (48 hours passed). Please create a new request.");
         }
 
@@ -270,7 +292,9 @@ public class ConnectionService {
 
         TutorStudentConnection saved = connectionRepository.save(connection);
 
-        // ✅ Push to tutor
+        log.info("Student responded to connection {} — new status: {}", connectionId, saved.getStatus());
+
+        // Push to tutor
         try {
             Long tutorUserId = saved.getTutor().getUser().getId();
             Long studentProfileId = saved.getStudent().getId();
@@ -299,8 +323,8 @@ public class ConnectionService {
                 body = "declined your " + subject + " offer of Rs " + tutorPrice;
             }
 
-            sendPushTo(tutorUserId, studentName  + " — " + subject, body, type,
-                    saved.getId(),saved.getCourse().getId(), studentProfileId, studentName, studentImage);
+            sendPushTo(tutorUserId, studentName + " — " + subject, body, type,
+                    saved.getId(), saved.getCourse().getId(), studentProfileId, studentName, studentImage);
         } catch (Exception e) {
             log.warn("Student respond push failed: {}", e.getMessage());
         }
@@ -308,10 +332,14 @@ public class ConnectionService {
         return saved;
     }
 
-    // ============ DISCONNECT ============
+    // ============================================================
+    // DISCONNECT
+    // ============================================================
 
     @Transactional
     public TutorStudentConnection disconnectConnection(Long connectionId, String disconnectedBy) {
+        log.debug("Disconnecting connection {} by {}", connectionId, disconnectedBy);
+
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
@@ -319,11 +347,11 @@ public class ConnectionService {
         connection.setIsActive(false);
         connection.setExpiresAt(null);
 
-        System.out.println("Connection " + connectionId + " disconnected by " + disconnectedBy);
-
         TutorStudentConnection saved = connectionRepository.save(connection);
 
-        // ✅ Push to other party
+        log.info("Connection {} disconnected by {}", connectionId, disconnectedBy);
+
+        // Push to other party
         try {
             boolean studentDisconnected = "STUDENT".equalsIgnoreCase(disconnectedBy);
             Long recipientUserId = studentDisconnected
@@ -355,10 +383,14 @@ public class ConnectionService {
         return saved;
     }
 
-    // ============ STUDENT CANCEL PENDING ============
+    // ============================================================
+    // STUDENT CANCEL PENDING
+    // ============================================================
 
     @Transactional
     public TutorStudentConnection studentCancelPending(Long connectionId) {
+        log.debug("Student cancelling pending connection {}", connectionId);
+
         TutorStudentConnection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new RuntimeException("Connection not found"));
 
@@ -374,11 +406,11 @@ public class ConnectionService {
         connection.setIsActive(false);
         connection.setExpiresAt(null);
 
-        System.out.println("Connection " + connectionId + " cancelled by student");
-
         TutorStudentConnection saved = connectionRepository.save(connection);
 
-        // ✅ Push to tutor
+        log.info("Connection {} cancelled by student", connectionId);
+
+        // Push to tutor
         try {
             Long tutorUserId = saved.getTutor().getUser().getId();
             String studentName = saved.getStudent().getFirstName() + " " + saved.getStudent().getLastName();
@@ -388,7 +420,7 @@ public class ConnectionService {
             sendPushTo(tutorUserId, studentName + " — " + subject,
                     "cancelled their " + subject + " request",
                     "connection_cancelled",
-                    saved.getId(),saved.getCourse().getId(), saved.getStudent().getId(),
+                    saved.getId(), saved.getCourse().getId(), saved.getStudent().getId(),
                     studentName, studentImage);
         } catch (Exception e) {
             log.warn("Cancel push failed: {}", e.getMessage());
@@ -397,7 +429,9 @@ public class ConnectionService {
         return saved;
     }
 
-    // ============ SCHEDULED AUTO-EXPIRE ============
+    // ============================================================
+    // SCHEDULED AUTO-EXPIRE
+    // ============================================================
 
     @Transactional
     @Scheduled(fixedDelay = 3600000)
@@ -411,18 +445,20 @@ public class ConnectionService {
                 );
 
         if (!expiredConnections.isEmpty()) {
-            System.out.println("Deleting " + expiredConnections.size() + " expired bids...");
+            log.info("Processing {} expired bids", expiredConnections.size());
 
             for (TutorStudentConnection conn : expiredConnections) {
                 conn.setStatus(ConnectionStatus.EXPIRED);
                 conn.setIsActive(false);
                 connectionRepository.save(conn);
-                System.out.println("Expired bid deleted: Connection ID " + conn.getId());
+                log.debug("Expired bid: connectionId={}", conn.getId());
             }
         }
     }
 
-    // ============ GETTERS (UNCHANGED) ============
+    // ============================================================
+    // GETTERS
+    // ============================================================
 
     public List<ConnectionResponse> getStudentConnections(Long studentId) {
         return connectionRepository.findByStudentId(studentId)
@@ -729,7 +765,9 @@ public class ConnectionService {
                 .build();
     }
 
-    // ============ CHAT HELPERS ============
+    // ============================================================
+    // CHAT HELPERS
+    // ============================================================
 
     @Transactional(readOnly = true)
     public Long getStudentProfileId(Long studentUserId) {
@@ -780,7 +818,9 @@ public class ConnectionService {
         }
     }
 
-    // ============ HELPERS ============
+    // ============================================================
+    // HELPERS
+    // ============================================================
 
     private String formatTo12Hour(LocalTime time) {
         if (time == null) return "N/A";
@@ -830,13 +870,13 @@ public class ConnectionService {
         }
     }
 
-
     private String subjectOf(TutorStudentConnection conn) {
         try {
             if (conn.getCourse() != null && conn.getCourse().getSubject() != null) {
                 return conn.getCourse().getSubject();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return "a course";
     }
 
