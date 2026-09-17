@@ -4,8 +4,7 @@ import com.tutr.backend.dto.connection.ConnectionRequest;
 import com.tutr.backend.dto.connection.ConnectionResponse;
 import com.tutr.backend.dto.student.StudentBid;
 import com.tutr.backend.dto.tutor.TutorBid;
-import com.tutr.backend.model.entity.TutorStudentConnection;
-import com.tutr.backend.service.ConnectionService;
+import com.tutr.backend.facade.ConnectionFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +18,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ConnectionController {
 
-    private final ConnectionService connectionService;
+    private final ConnectionFacade connectionFacade;
+
+    // ============================================================
+    // STATE CHANGES
+    // ============================================================
 
     @PostMapping("/request")
     public ResponseEntity<?> requestConnection(@RequestBody ConnectionRequest request) {
         try {
-            TutorStudentConnection connection = connectionService.requestConnection(request);
-            ConnectionResponse response = connectionService.convertToResponse(connection);
+            ConnectionResponse response = connectionFacade.requestConnection(request);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -38,8 +40,7 @@ public class ConnectionController {
             @RequestParam boolean accept,
             @RequestParam(required = false) Double counterOffer) {
         try {
-            TutorStudentConnection connection = connectionService.tutorRespond(connectionId, accept, counterOffer);
-            ConnectionResponse response = connectionService.convertToResponse(connection);
+            ConnectionResponse response = connectionFacade.tutorRespond(connectionId, accept, counterOffer);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -52,8 +53,7 @@ public class ConnectionController {
             @RequestParam boolean accept,
             @RequestParam(required = false) Double newOffer) {
         try {
-            TutorStudentConnection connection = connectionService.studentRespondToCounter(connectionId, accept, newOffer);
-            ConnectionResponse response = connectionService.convertToResponse(connection);
+            ConnectionResponse response = connectionFacade.studentRespond(connectionId, accept, newOffer);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -65,8 +65,7 @@ public class ConnectionController {
             @PathVariable Long connectionId,
             @RequestParam String disconnectedBy) {
         try {
-            TutorStudentConnection connection = connectionService.disconnectConnection(connectionId, disconnectedBy);
-            ConnectionResponse response = connectionService.convertToResponse(connection);
+            ConnectionResponse response = connectionFacade.disconnectConnection(connectionId, disconnectedBy);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -76,19 +75,21 @@ public class ConnectionController {
     @PostMapping("/{connectionId}/student-cancel")
     public ResponseEntity<?> studentCancelPending(@PathVariable Long connectionId) {
         try {
-            TutorStudentConnection connection = connectionService.studentCancelPending(connectionId);
-            ConnectionResponse response = connectionService.convertToResponse(connection);
+            ConnectionResponse response = connectionFacade.studentCancelPending(connectionId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
+    // ============================================================
+    // LIST / QUERY ENDPOINTS
+    // ============================================================
+
     @GetMapping("/student/{studentId}")
     public ResponseEntity<?> getStudentConnections(@PathVariable Long studentId) {
         try {
-            List<ConnectionResponse> connections = connectionService.getStudentConnections(studentId);
-            return ResponseEntity.ok(connections);
+            return ResponseEntity.ok(connectionFacade.getStudentConnections(studentId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
@@ -97,8 +98,7 @@ public class ConnectionController {
     @GetMapping("/tutor/{tutorId}")
     public ResponseEntity<?> getTutorConnections(@PathVariable Long tutorId) {
         try {
-            List<ConnectionResponse> connections = connectionService.getTutorConnections(tutorId);
-            return ResponseEntity.ok(connections);
+            return ResponseEntity.ok(connectionFacade.getTutorConnections(tutorId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
@@ -107,8 +107,7 @@ public class ConnectionController {
     @GetMapping("/tutor/{tutorId}/pending")
     public ResponseEntity<?> getPendingRequests(@PathVariable Long tutorId) {
         try {
-            List<ConnectionResponse> pending = connectionService.getPendingRequestsForTutor(tutorId);
-            return ResponseEntity.ok(pending);
+            return ResponseEntity.ok(connectionFacade.getPendingRequestsForTutor(tutorId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
@@ -117,8 +116,7 @@ public class ConnectionController {
     @GetMapping("/tutor/{tutorId}/negotiations")
     public ResponseEntity<?> getNegotiations(@PathVariable Long tutorId) {
         try {
-            List<ConnectionResponse> negotiations = connectionService.getNegotiationsForTutor(tutorId);
-            return ResponseEntity.ok(negotiations);
+            return ResponseEntity.ok(connectionFacade.getNegotiationsForTutor(tutorId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
@@ -127,8 +125,7 @@ public class ConnectionController {
     @GetMapping("/tutor/{tutorId}/confirmed")
     public ResponseEntity<?> getTutorConfirmedConnections(@PathVariable Long tutorId) {
         try {
-            List<ConnectionResponse> connections = connectionService.getTutorConfirmedConnections(tutorId);
-            return ResponseEntity.ok(connections);
+            return ResponseEntity.ok(connectionFacade.getTutorConfirmedConnections(tutorId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
@@ -137,40 +134,25 @@ public class ConnectionController {
     @GetMapping("/student/{studentId}/confirmed")
     public ResponseEntity<?> getStudentConfirmedConnections(@PathVariable Long studentId) {
         try {
-            List<ConnectionResponse> connections = connectionService.getStudentConfirmedConnections(studentId);
-            return ResponseEntity.ok(connections);
+            return ResponseEntity.ok(connectionFacade.getStudentConfirmedConnections(studentId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
     }
 
-    // ============ TUTOR BIDS API ============
+    // ============================================================
+    // TUTOR BIDS
+    // ============================================================
+
     @GetMapping("/tutor/{tutorId}/bids-with-cards")
     public ResponseEntity<?> getTutorBidsWithCourseCard(@PathVariable Long tutorId) {
         try {
-            List<TutorBid> bids = connectionService.getTutorBidsWithCourseCard(tutorId);
-            return ResponseEntity.ok(bids);
+            return ResponseEntity.ok(connectionFacade.getTutorBidsWithCourseCard(tutorId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching bids: " + e.getMessage());
         }
     }
-
-    // ============ TUTOR COURSE-SPECIFIC BIDS ============
-
-//    @GetMapping("/tutor/{tutorId}/course/{courseId}/bids")
-//    public ResponseEntity<?> getTutorCourseBids(
-//            @PathVariable Long tutorId,
-//            @PathVariable Long courseId) {
-//        try {
-//            List<TutorBid> bids = connectionService.getTutorCourseBids(tutorId, courseId);
-//            return ResponseEntity.ok(bids);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error fetching course bids: " + e.getMessage());
-//        }
-//    }
-
 
     @GetMapping("/tutor/{tutorId}/course/{courseId}/student/{studentId}/bid")
     public ResponseEntity<?> getTutorCourseBidForStudent(
@@ -178,7 +160,7 @@ public class ConnectionController {
             @PathVariable Long courseId,
             @PathVariable Long studentId) {
         try {
-            TutorBid bid = connectionService.getTutorCourseBidForStudent(tutorId, courseId, studentId);
+            TutorBid bid = connectionFacade.getTutorCourseBidForStudent(tutorId, courseId, studentId);
             if (bid == null) {
                 return ResponseEntity.ok(new ArrayList<>());
             }
@@ -188,14 +170,15 @@ public class ConnectionController {
                     .body("Error fetching course bid: " + e.getMessage());
         }
     }
-    // ============  STUDENT BID APIS ============
 
-    // KEEP THIS - Get bids for a specific course
+    // ============================================================
+    // STUDENT BIDS
+    // ============================================================
+
     @GetMapping("/student/{studentId}/bids-with-details")
     public ResponseEntity<?> getStudentBidsWithDetails(@PathVariable Long studentId) {
         try {
-            List<StudentBid> bids = connectionService.getStudentBidsWithDetails(studentId);
-            return ResponseEntity.ok(bids);
+            return ResponseEntity.ok(connectionFacade.getStudentBidsWithDetails(studentId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching bids: " + e.getMessage());
@@ -207,19 +190,17 @@ public class ConnectionController {
             @PathVariable Long studentId,
             @PathVariable Long courseId) {
         try {
-            List<StudentBid> bids = connectionService.getStudentCourseBids(studentId, courseId);
-            return ResponseEntity.ok(bids);
+            return ResponseEntity.ok(connectionFacade.getStudentCourseBids(studentId, courseId));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching course bids: " + e.getMessage());
         }
     }
 
-    // KEEP THIS - Get details of one specific bid
     @GetMapping("/student/bid/{connectionId}")
     public ResponseEntity<?> getStudentBidDetails(@PathVariable Long connectionId) {
         try {
-            StudentBid bidDetails = connectionService.getStudentBidDetails(connectionId);
+            StudentBid bidDetails = connectionFacade.getStudentBidDetails(connectionId);
             return ResponseEntity.ok(bidDetails);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -234,11 +215,10 @@ public class ConnectionController {
             @PathVariable Long studentId,
             @PathVariable Long connectionId) {
         try {
-            ConnectionResponse connection = connectionService.getConnectionStatus(studentId, connectionId);
+            ConnectionResponse connection = connectionFacade.getConnectionStatus(studentId, connectionId);
             return ResponseEntity.ok(connection);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-
 }
