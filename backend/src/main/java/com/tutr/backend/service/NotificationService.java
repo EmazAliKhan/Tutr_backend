@@ -114,6 +114,20 @@ public class NotificationService {
         notificationRepo.deleteByIdAndUserId(id, userId);
     }
 
+    @Transactional
+    public void markAllForRoomAsRead(Long roomId, Long userId) {
+        List<Notification> list = notificationRepo.findByUserIdOrderByCreatedAtDesc(userId);
+        for (Notification n : list) {
+            if (!n.isRead()
+                    && "new_message".equals(n.getType())
+                    && n.getReferenceId() != null
+                    && n.getReferenceId().equals(roomId)) {
+                n.setRead(true);
+            }
+        }
+        notificationRepo.saveAll(list);
+    }
+
     // ------------------------------------------------------------
     // MAPPER
     // ------------------------------------------------------------

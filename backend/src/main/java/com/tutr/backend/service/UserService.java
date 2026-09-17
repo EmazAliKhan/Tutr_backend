@@ -29,7 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final TutorProfileRepository tutorProfileRepository;
     private final FileStorageService fileStorageService;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
 
     // Email verification service
     private final EmailVerificationService emailVerificationService;
@@ -165,7 +165,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         //  - Email verification check
-        if (!emailVerificationService.isEmailVerified(user.getEmail())) {
+        if (!user.isEmailVerified()) {
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
 

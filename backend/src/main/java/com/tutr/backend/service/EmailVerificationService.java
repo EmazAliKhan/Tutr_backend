@@ -23,13 +23,12 @@ public class EmailVerificationService {
     private final EmailVerificationRepository verificationRepository;
     private final UserRepository userRepository;
     private final JavaMailSender mailSender;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
     private final SecureRandom random = new SecureRandom();
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
     // Generate 4-digit OTP
     private String generateOtp() {
         return String.format("%04d", random.nextInt(10000));

@@ -31,7 +31,7 @@ public class StudentProfileService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         //  Email verification check
-        if (!emailVerificationService.isEmailVerified(user.getEmail())) {
+        if (!user.isEmailVerified()) {
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
         }
 

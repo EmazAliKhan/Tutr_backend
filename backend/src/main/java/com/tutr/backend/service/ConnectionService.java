@@ -106,8 +106,13 @@ public class ConnectionService {
                     ? "sent you a request for " + subject + " with offer Rs " + request.getSuggestedPrice() + EXPIRY_HINT
                     : "sent you a connection request for " + subject + EXPIRY_HINT;
 
-            sendPushTo(tutorUserId, title, body, "connection_request",
-                    saved.getId(),saved.getCourse().getId(), studentProfileId, studentName, studentImage);
+            //  If student attached a price → it's a counter/offer, not a plain request
+            String pushType = request.getSuggestedPrice() != null
+                    ? "connection_counter"
+                    : "connection_request";
+
+            sendPushTo(tutorUserId, title, body, pushType,
+                    saved.getId(), saved.getCourse().getId(), studentProfileId, studentName, studentImage);
         } catch (Exception e) {
             log.warn("Request push failed: {}", e.getMessage());
         }

@@ -86,6 +86,17 @@ public class NotificationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    @PatchMapping("/room/{roomId}/read-all")
+    public ResponseEntity<?> markRoomNotificationsRead(
+            @PathVariable Long roomId,
+            @RequestParam Long userId) {
+        try {
+            notificationService.markAllForRoomAsRead(roomId, userId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteNotification(
