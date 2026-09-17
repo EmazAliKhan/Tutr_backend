@@ -3,15 +3,14 @@ package com.tutr.backend.controller.auth;
 import com.tutr.backend.dto.auth.OtpVerifyRequest;
 import com.tutr.backend.dto.auth.RoleSignupRequest;
 import com.tutr.backend.dto.profile.*;
+import com.tutr.backend.facade.RegistrationFacade;
 import com.tutr.backend.model.entity.TutorProfile;
 import com.tutr.backend.model.entity.User;
-import com.tutr.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 import com.tutr.backend.model.entity.StudentProfile;
-import com.tutr.backend.service.StudentProfileService;
 import org.springframework.http.HttpStatus;
 
 import java.util.Arrays;
@@ -23,15 +22,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
 
+    private final RegistrationFacade registrationFacade;
 
-    private final UserService userService;
-    private final StudentProfileService studentProfileService;
-
-
+    // ============================================================
+    // ROLE SIGNUP (legacy — kept for compatibility)
+    // ============================================================
     @PostMapping("/role")
     public ResponseEntity<?> registerUser(@RequestBody RoleSignupRequest request) {
         try {
-            User user = userService.registerUser(request);
+            User user = registrationFacade.registerUserRaw(request);
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity
@@ -40,26 +39,27 @@ public class UserController {
         }
     }
 
-    // Tutor Profile Creation
+    // ============================================================
+    // TUTOR PROFILE — CREATE
+    // ============================================================
     @PostMapping("/tutor/profile")
     public ResponseEntity<?> createTutorProfile(@RequestBody TutorProfileRequest request) {
         try {
-            // Remove image from request if present
             request.setProfileImage(null);
-
-            TutorProfile profile = userService.completeTutorProfile(request);
+            TutorProfile profile = registrationFacade.completeTutorProfile(request);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
-
-    // GET TUTOR PROFILE FOR EDITING
+    // ============================================================
+    // TUTOR PROFILE — GET FOR EDIT
+    // ============================================================
     @GetMapping("/tutor/profile/{profileId}")
     public ResponseEntity<?> getTutorProfileForEdit(@PathVariable Long profileId) {
         try {
-            TutorProfileResponse profile = userService.getTutorProfile(profileId);
+            TutorProfileResponse profile = registrationFacade.getTutorProfile(profileId);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -67,7 +67,9 @@ public class UserController {
         }
     }
 
-    // EDIT TUTOR PROFILE -  with Image Validation
+    // ============================================================
+    // TUTOR PROFILE — EDIT (multipart)
+    // ============================================================
     @PutMapping(value = "/tutor/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editTutorProfile(@ModelAttribute EditTutorProfileRequest request) {
         try {
@@ -83,17 +85,14 @@ public class UserController {
                 System.out.println("New Image: " + originalFilename);
                 System.out.println("Content Type: " + contentType);
 
-                // Allowed image types
                 List<String> allowedTypes = Arrays.asList("image/jpeg", "image/jpg", "image/png");
                 List<String> allowedExtensions = Arrays.asList(".jpeg", ".jpg", ".png");
 
-                // Validate content type
                 if (contentType == null || !allowedTypes.contains(contentType.toLowerCase())) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                             .body("Error: Only JPEG, JPG, and PNG images are allowed. Received: " + contentType);
                 }
 
-                // Validate file extension
                 if (originalFilename != null) {
                     String fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
                     if (!allowedExtensions.contains(fileExtension)) {
@@ -102,8 +101,7 @@ public class UserController {
                     }
                 }
 
-                // Validate file size (max 5MB)
-                long maxSize = 5 * 1024 * 1024; // 5MB
+                long maxSize = 5 * 1024 * 1024;
                 if (request.getProfileImage().getSize() > maxSize) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                             .body("Error: File size too large. Maximum size is 5MB. Your file: " +
@@ -113,7 +111,7 @@ public class UserController {
                 System.out.println("New Image: No change");
             }
 
-            TutorProfile updatedProfile = userService.editTutorProfile(request);
+            TutorProfile updatedProfile = registrationFacade.editTutorProfile(request);
 
             System.out.println("Profile updated successfully");
             System.out.println("===== EDIT COMPLETE =====");
@@ -129,9 +127,9 @@ public class UserController {
         }
     }
 
-
-
-    // NEW: JSON endpoint for text-only profile update (NO IMAGE)
+    // ============================================================
+    // TUTOR PROFILE — EDIT (JSON)
+    // ============================================================
     @PutMapping(value = "/tutor/profile/edit-json")
     public ResponseEntity<?> editTutorProfileJson(@RequestBody EditTutorProfileRequest request) {
         try {
@@ -139,10 +137,9 @@ public class UserController {
             System.out.println("Profile ID: " + request.getProfileId());
             System.out.println("First Name: " + request.getFirstName());
 
-            // Remove image from request (it will be null anyway)
             request.setProfileImage(null);
 
-            TutorProfile updatedProfile = userService.editTutorProfile(request);
+            TutorProfile updatedProfile = registrationFacade.editTutorProfile(request);
 
             System.out.println("Profile updated successfully");
             return ResponseEntity.ok(updatedProfile);
@@ -156,25 +153,26 @@ public class UserController {
         }
     }
 
-
-
-    // Student Profile Creation
+    // ============================================================
+    // STUDENT PROFILE — CREATE
+    // ============================================================
     @PostMapping("/student/profile")
     public ResponseEntity<?> createStudentProfile(@RequestBody StudentProfileRequest request) {
         try {
-            StudentProfile profile = studentProfileService.createStudentProfile(request);
+            StudentProfile profile = registrationFacade.completeStudentProfile(request);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
-
-    // GET student profile for editing
+    // ============================================================
+    // STUDENT PROFILE — GET FOR EDIT
+    // ============================================================
     @GetMapping("/student/profile/{profileId}")
     public ResponseEntity<?> getStudentProfileForEdit(@PathVariable Long profileId) {
         try {
-            StudentProfileResponse profile = studentProfileService.getStudentProfile(profileId);
+            StudentProfileResponse profile = registrationFacade.getStudentProfile(profileId);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -182,8 +180,9 @@ public class UserController {
         }
     }
 
-
-    // EDIT student profile
+    // ============================================================
+    // STUDENT PROFILE — EDIT (multipart)
+    // ============================================================
     @PutMapping(value = "/student/profile/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> editStudentProfile(@ModelAttribute EditStudentProfileRequest request) {
         try {
@@ -193,7 +192,7 @@ public class UserController {
             System.out.println("New Image: " + (request.getProfileImage() != null ?
                     request.getProfileImage().getOriginalFilename() : "No change"));
 
-            StudentProfile updatedProfile = studentProfileService.editStudentProfile(request);
+            StudentProfile updatedProfile = registrationFacade.editStudentProfile(request);
 
             System.out.println("Student profile updated successfully");
             System.out.println("===== EDIT COMPLETE =====");
@@ -209,9 +208,9 @@ public class UserController {
         }
     }
 
-
-    // Add this to UserController.java (next to the student endpoints)
-
+    // ============================================================
+    // STUDENT PROFILE — EDIT (JSON)
+    // ============================================================
     @PutMapping(value = "/student/profile/edit-json")
     public ResponseEntity<?> editStudentProfileJson(@RequestBody EditStudentProfileRequest request) {
         try {
@@ -219,10 +218,9 @@ public class UserController {
             System.out.println("Profile ID: " + request.getProfileId());
             System.out.println("First Name: " + request.getFirstName());
 
-            // Remove image from request (it will be null anyway)
             request.setProfileImage(null);
 
-            StudentProfile updatedProfile = studentProfileService.editStudentProfile(request);
+            StudentProfile updatedProfile = registrationFacade.editStudentProfile(request);
 
             System.out.println("Student profile updated successfully");
             return ResponseEntity.ok(updatedProfile);
@@ -236,30 +234,26 @@ public class UserController {
         }
     }
 
-// Add to UserController.java
-
-    // Temporary registration (NO database save)
+    // ============================================================
+    // STEP 1 — Temp registration (send OTP)
+    // ============================================================
     @PostMapping("/register-temp")
     public ResponseEntity<?> registerTempUser(@RequestBody RoleSignupRequest request) {
         try {
-            User tempUser = userService.registerUser(request);
-            return ResponseEntity.ok(Map.of(
-                    "tempEmail", tempUser.getEmail(),
-                    "role", tempUser.getRole().toString(),
-                    "createdAt", tempUser.getCreatedAt().toString(),
-                    "message", "OTP sent to your email. Please verify to complete registration."
-            ));
+            return ResponseEntity.ok(registrationFacade.startSignup(request));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Verify OTP and save user to database
+    // ============================================================
+    // STEP 2 — Verify OTP and save user
+    // ============================================================
     @PostMapping("/verify-and-save")
     public ResponseEntity<?> verifyAndSaveUser(@RequestBody OtpVerifyRequest request) {
         try {
-            User user = userService.verifyAndSaveUser(request.getEmail(), request.getOtpCode());
+            User user = registrationFacade.verifySignupOtp(request.getEmail(), request.getOtpCode());
             return ResponseEntity.ok(Map.of(
                     "id", user.getId(),
                     "email", user.getEmail(),
@@ -271,5 +265,4 @@ public class UserController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
-
 }
