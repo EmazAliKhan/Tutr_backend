@@ -819,6 +819,17 @@ public class ConnectionService {
     }
 
     // ============================================================
+    // NOTIFICATION ROUTING — CHECK LIVE STATUS
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public String getLatestStatusForCourseAndStudent(Long courseId, Long studentId) {
+        List<TutorStudentConnection> conns = connectionRepository
+                .findByStudentIdAndCourseIdOrderByRequestedAtDesc(studentId, courseId);
+        return conns.isEmpty() ? "NONE" : conns.get(0).getStatus().toString();
+    }
+
+    // ============================================================
     // HELPERS
     // ============================================================
 

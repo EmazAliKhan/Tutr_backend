@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/connections")
@@ -219,6 +220,22 @@ public class ConnectionController {
             return ResponseEntity.ok(connection);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // NOTIFICATION ROUTING — CHECK LIVE STATUS
+    // ============================================================
+
+    @GetMapping("/status-by-course-student")
+    public ResponseEntity<?> getStatusByCourseAndStudent(
+            @RequestParam Long courseId,
+            @RequestParam Long studentId) {
+        try {
+            String status = connectionFacade.getLatestStatusForCourseAndStudent(courseId, studentId);
+            return ResponseEntity.ok(Map.of("status", status));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

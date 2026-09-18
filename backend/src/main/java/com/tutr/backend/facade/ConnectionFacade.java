@@ -118,4 +118,12 @@ public class ConnectionFacade {
     public ConnectionResponse getConnectionStatus(Long studentId, Long connectionId) {
         return connectionService.getConnectionStatus(studentId, connectionId);
     }
+
+    // ============================================================
+    // NOTIFICATION ROUTING — CHECK LIVE STATUS
+    // ============================================================
+
+    public String getLatestStatusForCourseAndStudent(Long courseId, Long studentId) {
+        return connectionService.getLatestStatusForCourseAndStudent(courseId, studentId);
+    }
 }
