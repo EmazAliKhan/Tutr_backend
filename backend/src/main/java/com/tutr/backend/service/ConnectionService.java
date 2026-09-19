@@ -434,7 +434,7 @@ public class ConnectionService {
     // ============================================================
 
     @Transactional
-    @Scheduled(fixedDelay = 3600000)
+    @Scheduled(fixedDelay = 900000)
     public void deleteExpiredBids() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -444,14 +444,61 @@ public class ConnectionService {
                         now
                 );
 
-        if (!expiredConnections.isEmpty()) {
-            log.info("Processing {} expired bids", expiredConnections.size());
+        if (expiredConnections.isEmpty()) return;
 
-            for (TutorStudentConnection conn : expiredConnections) {
-                conn.setStatus(ConnectionStatus.EXPIRED);
-                conn.setIsActive(false);
-                connectionRepository.save(conn);
-                log.debug("Expired bid: connectionId={}", conn.getId());
+        log.info("Processing {} expired bids", expiredConnections.size());
+
+        for (TutorStudentConnection conn : expiredConnections) {
+            conn.setStatus(ConnectionStatus.EXPIRED);
+            conn.setIsActive(false);
+            connectionRepository.save(conn);
+            log.debug("Expired bid: connectionId={}", conn.getId());
+
+            //  Notify both parties
+            try {
+                String subject = subjectOf(conn);
+                Long courseId = conn.getCourse() != null ? conn.getCourse().getId() : null;
+
+                // ---------- Notify STUDENT ----------
+                Long studentUserId = conn.getStudent().getUser().getId();
+                Long tutorProfileId = conn.getTutor().getId();
+                String tutorName = conn.getTutor().getFirstName() + " "
+                        + conn.getTutor().getLastName();
+                String tutorImage = conn.getTutor().getProfilePictureUrl();
+
+                sendPushTo(
+                        studentUserId,
+                        tutorName + " — " + subject,
+                        "Your " + subject + " bid has expired (48 hours passed). Please send a new request.",
+                        "connection_expired",
+                        conn.getId(),
+                        courseId,
+                        tutorProfileId,
+                        tutorName,
+                        tutorImage
+                );
+
+                // ---------- Notify TUTOR ----------
+                Long tutorUserId = conn.getTutor().getUser().getId();
+                Long studentProfileId = conn.getStudent().getId();
+                String studentName = conn.getStudent().getFirstName() + " "
+                        + conn.getStudent().getLastName();
+                String studentImage = conn.getStudent().getProfilePictureUrl();
+
+                sendPushTo(
+                        tutorUserId,
+                        studentName + " — " + subject,
+                        "The " + subject + " bid has expired (48 hours passed) without a response.",
+                        "connection_expired",
+                        conn.getId(),
+                        courseId,
+                        studentProfileId,
+                        studentName,
+                        studentImage
+                );
+
+            } catch (Exception e) {
+                log.warn("Expired push failed for connection {}: {}", conn.getId(), e.getMessage());
             }
         }
     }

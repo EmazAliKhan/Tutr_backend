@@ -1,5 +1,6 @@
 package com.tutr.backend.security;
 
+import com.tutr.backend.admin.config.AdminJwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class JwtSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AdminJwtAuthenticationFilter adminJwtAuthenticationFilter;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,6 +41,8 @@ public class JwtSecurityConfig {
                                 "/api/auth/**",
                                 "/api/register/**",
                                 "/api/verify/**",
+                                "/api/admin/auth/login",
+
                                 "/api/profile-image/upload",
                                 "/api/student-image/upload",
                                 "/api/documents/upload",
@@ -54,6 +59,10 @@ public class JwtSecurityConfig {
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        adminJwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
