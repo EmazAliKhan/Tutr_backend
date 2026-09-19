@@ -154,10 +154,14 @@ public class NotificationService {
         LocalDate today = LocalDate.now();
         LocalDate date = dt.toLocalDate();
         long diff = today.toEpochDay() - date.toEpochDay();
-        if (diff == 0) return "Today";
-        if (diff == 1) return "Yesterday";
-        if (diff < 7) return dt.format(DateTimeFormatter.ofPattern("EEEE"));
-        return dt.format(DateTimeFormatter.ofPattern("MMM d, yyyy"));
+
+        // Format with date suffix for all groups
+        String dateSuffix = dt.format(DateTimeFormatter.ofPattern("MMM d"));
+
+        if (diff == 0)  return "Today · " + dateSuffix;
+        if (diff == 1)  return "Yesterday · " + dateSuffix;
+        if (diff < 7)   return dt.format(DateTimeFormatter.ofPattern("EEEE")) + " · " + dateSuffix;
+        return dt.format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
     }
 
     private String computeTimeLabel(LocalDateTime dt) {
