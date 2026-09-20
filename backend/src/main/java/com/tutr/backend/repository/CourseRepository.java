@@ -58,4 +58,22 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "HAVING AVG(r.rating) >= 4.0 OR COUNT(r) = 0 " +
             "ORDER BY avgRating DESC, c.createdAt DESC")
     List<Object[]> findTopRatedCourses();
+
+    // ============================================================
+    // ADMIN DASHBOARD AGGREGATIONS
+    // ============================================================
+
+    @Query("""
+    SELECT c.teachingMode AS mode, COUNT(c)
+    FROM Course c
+    GROUP BY c.teachingMode
+""")
+    List<Object[]> countCoursesByTeachingMode();
+
+    @Query("""
+    SELECT c.category AS category, COUNT(c)
+    FROM Course c
+    GROUP BY c.category
+""")
+    List<Object[]> countCoursesByCategory();
 }
