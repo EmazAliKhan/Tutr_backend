@@ -80,22 +80,4 @@ public class AdminProfileController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
-    @GetMapping("/ping")
-    public ResponseEntity<?> ping() {
-        return ResponseEntity.ok(Map.of("message", "AdminProfileController is loaded!"));
-    }
-
-    @GetMapping("/debug-query")
-    public ResponseEntity<?> debugQuery() {
-        String targetEmail = "admin@tutr.edu";
-        log.info(" Querying repo for: '{}'", targetEmail);
-
-        var result = adminAuthService.getCurrentAdmin(targetEmail);
-        return ResponseEntity.ok(Map.of(
-                "queriedFor", targetEmail,
-                "found", true,
-                "id", result.getId(),
-                "email", result.getEmail()
-        ));
-    }
 }

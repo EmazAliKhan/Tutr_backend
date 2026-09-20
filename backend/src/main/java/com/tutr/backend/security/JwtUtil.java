@@ -26,13 +26,23 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
+    // ============================================================
+    // USER TOKEN — uses default jwt.expiration (30 days)
+    // ============================================================
     public String generateToken(Long userId, String email, String role) {
+        return generateToken(userId, email, role, expirationMs);
+    }
+
+    // ============================================================
+    // ADMIN TOKEN — uses jwt.admin.expiration (24 hours)
+    // ============================================================
+    public String generateToken(Long userId, String email, String role, long customExpirationMs) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
 
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
+        Date expiry = new Date(now.getTime() + customExpirationMs);
 
         return Jwts.builder()
                 .claims(claims)

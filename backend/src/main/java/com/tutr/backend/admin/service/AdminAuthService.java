@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 
@@ -19,6 +20,9 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AdminAuthService {
+
+    @Value("${jwt.admin.expiration}")
+    private long adminExpirationMs;
 
     private final AdminUserRepository adminUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -48,7 +52,8 @@ public class AdminAuthService {
         String token = jwtUtil.generateToken(
                 admin.getId(),
                 admin.getEmail(),
-                admin.getRole().name()
+                admin.getRole().name(),
+                adminExpirationMs
         );
 
         log.info("Admin login successful: id={}, email={}, role={}",
