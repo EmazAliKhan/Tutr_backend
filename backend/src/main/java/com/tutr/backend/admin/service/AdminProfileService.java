@@ -1,8 +1,8 @@
 package com.tutr.backend.admin.service;
 
-import com.tutr.backend.admin.dto.AdminResponse;
-import com.tutr.backend.admin.dto.ChangeAdminPasswordRequest;
-import com.tutr.backend.admin.dto.UpdateAdminProfileRequest;
+import com.tutr.backend.admin.dto.auth.AdminResponse;
+import com.tutr.backend.admin.dto.auth.ChangeAdminPasswordRequest;
+import com.tutr.backend.admin.dto.auth.UpdateAdminProfileRequest;
 import com.tutr.backend.admin.exception.AdminEmailExistsException;
 import com.tutr.backend.admin.exception.AdminNotFoundException;
 import com.tutr.backend.admin.exception.AdminValidationException;

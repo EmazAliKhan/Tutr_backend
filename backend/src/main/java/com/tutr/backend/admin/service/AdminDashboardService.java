@@ -1,6 +1,10 @@
 package com.tutr.backend.admin.service;
 
-import com.tutr.backend.admin.dto.*;
+import com.tutr.backend.admin.dto.auth.DistributionResponse;
+import com.tutr.backend.admin.dto.auth.RecentRegistrationResponse;
+import com.tutr.backend.admin.dto.dashboard.AdminDashboardResponse;
+import com.tutr.backend.admin.dto.dashboard.AdminDashboardStatsResponse;
+import com.tutr.backend.admin.dto.dashboard.ChartDataPoint;
 import com.tutr.backend.model.entity.User;
 import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.repository.CourseRepository;
@@ -14,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

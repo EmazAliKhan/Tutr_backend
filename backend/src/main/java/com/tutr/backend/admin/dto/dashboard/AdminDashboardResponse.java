@@ -1,5 +1,7 @@
-package com.tutr.backend.admin.dto;
+package com.tutr.backend.admin.dto.dashboard;
 
+import com.tutr.backend.admin.dto.auth.DistributionResponse;
+import com.tutr.backend.admin.dto.auth.RecentRegistrationResponse;
 import lombok.Builder;
 import lombok.Data;
 

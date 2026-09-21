@@ -1,7 +1,7 @@
 package com.tutr.backend.admin.service;
 
-import com.tutr.backend.admin.dto.AdminLoginRequest;
-import com.tutr.backend.admin.dto.AdminLoginResponse;
+import com.tutr.backend.admin.dto.auth.AdminLoginRequest;
+import com.tutr.backend.admin.dto.auth.AdminLoginResponse;
 import com.tutr.backend.admin.exception.AdminNotFoundException;
 import com.tutr.backend.admin.mapper.AdminMapper;
 import com.tutr.backend.admin.model.AdminUser;

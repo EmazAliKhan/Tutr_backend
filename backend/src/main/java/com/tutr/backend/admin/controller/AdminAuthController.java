@@ -1,7 +1,7 @@
 package com.tutr.backend.admin.controller;
 
-import com.tutr.backend.admin.dto.AdminLoginRequest;
-import com.tutr.backend.admin.dto.AdminLoginResponse;
+import com.tutr.backend.admin.dto.auth.AdminLoginRequest;
+import com.tutr.backend.admin.dto.auth.AdminLoginResponse;
 import com.tutr.backend.admin.service.AdminAuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

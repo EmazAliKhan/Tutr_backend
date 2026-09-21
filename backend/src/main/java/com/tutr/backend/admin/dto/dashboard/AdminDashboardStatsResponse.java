@@ -1,4 +1,4 @@
-package com.tutr.backend.admin.dto;
+package com.tutr.backend.admin.dto.dashboard;
 
 import lombok.Builder;
 import lombok.Data;
