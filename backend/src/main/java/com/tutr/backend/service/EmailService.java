@@ -89,4 +89,37 @@ public class EmailService {
             log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
         }
     }
+
+    // ============================================================
+// ACCOUNT SUSPENSION EMAIL
+// ============================================================
+    public void sendSuspensionEmail(String email, String studentName) {
+        log.debug("Preparing suspension email for: {}", email);
+
+        String subject = "⚠️ Your TUTR Account Has Been Suspended";
+
+        String message = String.format("""
+        Dear %s,
+
+        Your TUTR account has been temporarily suspended by our administration team.
+
+        What this means:
+        • You cannot log in to your account.
+        • All your pending and ongoing negotiations have been cancelled.
+        • All your active tutor connections have been disconnected.
+
+        If you believe this is a mistake, or would like to appeal this decision,
+        please contact our support team:
+
+        📧 tutr.verify@gmail.com
+
+        Regards,
+        The TUTR Team
+
+        ---
+        This is an automated message. Please do not reply directly to this email.
+        """, studentName != null && !studentName.isBlank() ? studentName : "Student");
+
+        sendEmail(email, subject, message);
+    }
 }
