@@ -37,11 +37,27 @@ public class ChatController {
         } catch (RuntimeException e) {
             log.warn("Failed to get/create shared chat room: {}", e.getMessage());
 
-            if (e.getMessage().contains("User is not part of this chat room") ||
-                    e.getMessage().contains("confirmed connection")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            // No confirmed connection → 404 (resource doesn't exist for this user)
+            if (e.getMessage().contains("No confirmed connection") ||
+                    e.getMessage().contains("Cannot access messages") ||
+                    e.getMessage().contains("Cannot send message")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of(
+                                "error", "NO_CONFIRMED_CONNECTION",
+                                "message", e.getMessage()
+                        ));
             }
 
+// User is not part of this room → 403 (permission denied)
+            if (e.getMessage().contains("User is not part of this chat room")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "error", "NOT_PART_OF_CHAT",
+                                "message", e.getMessage()
+                        ));
+            }
+
+// Everything else → 400
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -67,11 +83,27 @@ public class ChatController {
         } catch (RuntimeException e) {
             log.warn("Failed to send message: {}", e.getMessage());
 
-            if (e.getMessage().contains("User is not part of this chat room") ||
-                    e.getMessage().contains("confirmed connection")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            // No confirmed connection → 404 (resource doesn't exist for this user)
+            if (e.getMessage().contains("No confirmed connection") ||
+                    e.getMessage().contains("Cannot access messages") ||
+                    e.getMessage().contains("Cannot send message")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of(
+                                "error", "NO_CONFIRMED_CONNECTION",
+                                "message", e.getMessage()
+                        ));
             }
 
+// User is not part of this room → 403 (permission denied)
+            if (e.getMessage().contains("User is not part of this chat room")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "error", "NOT_PART_OF_CHAT",
+                                "message", e.getMessage()
+                        ));
+            }
+
+// Everything else → 400
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -89,11 +121,27 @@ public class ChatController {
         } catch (RuntimeException e) {
             log.warn("Failed to get messages: {}", e.getMessage());
 
-            if (e.getMessage().contains("User is not part of this chat room") ||
-                    e.getMessage().contains("confirmed connection")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            // No confirmed connection → 404 (resource doesn't exist for this user)
+            if (e.getMessage().contains("No confirmed connection") ||
+                    e.getMessage().contains("Cannot access messages") ||
+                    e.getMessage().contains("Cannot send message")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of(
+                                "error", "NO_CONFIRMED_CONNECTION",
+                                "message", e.getMessage()
+                        ));
             }
 
+// User is not part of this room → 403 (permission denied)
+            if (e.getMessage().contains("User is not part of this chat room")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "error", "NOT_PART_OF_CHAT",
+                                "message", e.getMessage()
+                        ));
+            }
+
+// Everything else → 400
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
