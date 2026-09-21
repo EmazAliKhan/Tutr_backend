@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.tutr.backend.model.enums.AccountStatus;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,21 +49,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 User user = userRepository.findByEmail(email).orElse(null);
 
-                if (user != null &&
-                        SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (user != null) {
 
-                    var authorities = List.of(
-                            new SimpleGrantedAuthority("ROLE_" + role)
-                    );
+                    //  NEW: Block suspended users immediately (except on auth endpoints)
+                    if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+                        String path = request.getRequestURI();
+                        // Allow login/logout/auth endpoints to still respond so user gets a proper message
+                        boolean isAuthEndpoint = path.startsWith("/api/auth");
 
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(user, null, authorities);
+                        if (!isAuthEndpoint) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"ACCOUNT_SUSPENDED\"," +
+                                            "\"message\":\"Your account has been suspended. Please contact support.\"}"
+                            );
+                            return;
+                        }
+                    }
 
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                        var authorities = List.of(
+                                new SimpleGrantedAuthority("ROLE_" + role)
+                        );
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(user, null, authorities);
+
+                        authToken.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
+
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
                 }
             }
         } catch (Exception e) {

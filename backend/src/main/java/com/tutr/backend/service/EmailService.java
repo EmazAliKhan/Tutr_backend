@@ -91,8 +91,8 @@ public class EmailService {
     }
 
     // ============================================================
-// ACCOUNT SUSPENSION EMAIL
-// ============================================================
+    // ACCOUNT SUSPENSION EMAIL
+    // ============================================================
     public void sendSuspensionEmail(String email, String studentName) {
         log.debug("Preparing suspension email for: {}", email);
 
@@ -118,6 +118,40 @@ public class EmailService {
 
         ---
         This is an automated message. Please do not reply directly to this email.
+        """, studentName != null && !studentName.isBlank() ? studentName : "Student");
+
+        sendEmail(email, subject, message);
+    }
+
+    // ============================================================
+// ACCOUNT REACTIVATION EMAIL
+// ============================================================
+    public void sendReactivationEmail(String email, String studentName) {
+        log.debug("Preparing reactivation email for: {}", email);
+
+        String subject = "✅ Your TUTR Account Has Been Reactivated";
+
+        String message = String.format("""
+        Dear %s,
+
+        Great news! Your TUTR account has been reactivated by our administration team.
+
+        You can now log in again and continue your learning journey.
+
+        What's restored:
+        • Full access to your account
+        • Ability to browse and enroll in new courses
+
+        Note: Any previous connections that were cancelled or disconnected
+        during the suspension will need to be re-established with your tutors.
+
+        Log in now to get started.
+
+        Regards,
+        The TUTR Team
+
+        ---
+        Need help? Contact us at tutr.verify@gmail.com
         """, studentName != null && !studentName.isBlank() ? studentName : "Student");
 
         sendEmail(email, subject, message);

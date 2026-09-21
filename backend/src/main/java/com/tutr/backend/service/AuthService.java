@@ -3,6 +3,7 @@ package com.tutr.backend.service;
 import com.tutr.backend.dto.auth.LoginRequest;
 import com.tutr.backend.dto.auth.LoginResponse;
 import com.tutr.backend.model.entity.User;
+import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.model.enums.Role;
 import com.tutr.backend.model.enums.VerificationStatus;
 import com.tutr.backend.repository.UserRepository;
@@ -46,6 +47,14 @@ public class AuthService {
         if (!user.isEmailVerified()) {
             log.warn("Login blocked — email not verified: {}", request.getEmail());
             throw new RuntimeException("Please verify your email first. Check your inbox for OTP.");
+        }
+
+        //  NEW: Check account status
+        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            log.warn("Login blocked — account suspended: {}", request.getEmail());
+            throw new RuntimeException(
+                    "Your account has been suspended. Please contact support at tutr.verify@gmail.com"
+            );
         }
 
         // Validate based on role

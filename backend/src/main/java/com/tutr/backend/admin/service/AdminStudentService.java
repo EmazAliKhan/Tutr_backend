@@ -8,6 +8,9 @@ import com.tutr.backend.model.enums.ConnectionStatus;
 import com.tutr.backend.model.enums.CourseCategory;
 import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.repository.*;
+import com.tutr.backend.service.EmailService;
+import com.tutr.backend.service.NotificationService;
+import com.tutr.backend.service.PushNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,9 @@ public class AdminStudentService {
     private final TutorStudentConnectionRepository connectionRepository;
     private final StudentFavoriteRepository favoriteRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
+    private final PushNotificationService pushNotificationService;
 
     private static final List<ConnectionStatus> ACTIVE_DEAL_STATUSES = Arrays.asList(
             ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING);
@@ -135,8 +141,8 @@ public class AdminStudentService {
     }
 
     // ============================================================
-    // SUSPEND STUDENT
-    // ============================================================
+// SUSPEND STUDENT (with email + auto-cancel connections)
+// ============================================================
     @Transactional
     public void suspendStudent(Long studentId) {
         log.debug("Admin suspending student id={}", studentId);
@@ -145,15 +151,57 @@ public class AdminStudentService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         User user = student.getUser();
+
+        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new RuntimeException("Student is already suspended");
+        }
+
+        // 1. Update status
         user.setAccountStatus(AccountStatus.SUSPENDED);
         userRepository.save(user);
+        userRepository.flush();
 
-        log.info("Student suspended: studentId={}, userId={}", studentId, user.getId());
+        // 2. Cancel PENDING + NEGOTIATING connections
+        List<TutorStudentConnection> activeDeals = connectionRepository
+                .findByStudentIdAndStatusIn(studentId, ACTIVE_DEAL_STATUSES);
+
+        for (TutorStudentConnection conn : activeDeals) {
+            conn.setStatus(ConnectionStatus.CANCELLED);
+            conn.setIsActive(false);
+            conn.setExpiresAt(null);
+            connectionRepository.save(conn);
+
+            // Notify the tutor
+            notifyTutorCancelledBySuspension(conn);
+        }
+
+        // 3. Disconnect CONFIRMED connections
+        List<TutorStudentConnection> confirmed = connectionRepository
+                .findByStudentIdAndStatus(studentId, ConnectionStatus.CONFIRMED);
+
+        for (TutorStudentConnection conn : confirmed) {
+            conn.setStatus(ConnectionStatus.DISCONNECTED);
+            conn.setIsActive(false);
+            connectionRepository.save(conn);
+
+            notifyTutorDisconnectedBySuspension(conn);
+        }
+
+        // 4. Send email
+        try {
+            String fullName = student.getFirstName() + " " + student.getLastName();
+            emailService.sendSuspensionEmail(user.getEmail(), fullName);
+        } catch (Exception e) {
+            log.warn("Failed to send suspension email to {}: {}", user.getEmail(), e.getMessage());
+        }
+
+        log.info("Student suspended: studentId={}, userId={}, cancelledDeals={}, disconnected={}",
+                studentId, user.getId(), activeDeals.size(), confirmed.size());
     }
 
     // ============================================================
-// REACTIVATE STUDENT
-// ============================================================
+    // REACTIVATE STUDENT
+    // ============================================================
     @Transactional
     public void reactivateStudent(Long studentId) {
         log.debug("Admin reactivating student id={}", studentId);
@@ -169,6 +217,14 @@ public class AdminStudentService {
 
         user.setAccountStatus(AccountStatus.ACTIVE);
         userRepository.save(user);
+        userRepository.flush();
+
+        try {
+            String fullName = student.getFirstName() + " " + student.getLastName();
+            emailService.sendReactivationEmail(user.getEmail(), fullName);
+        } catch (Exception e) {
+            log.warn("Failed to send reactivation email to {}: {}", user.getEmail(), e.getMessage());
+        }
 
         log.info("Student reactivated: studentId={}, userId={}", studentId, user.getId());
     }
@@ -262,5 +318,71 @@ public class AdminStudentService {
             return student.getSchoolName() + " Student";
         }
         return "Student";
+    }
+
+    // ============================================================
+// NOTIFY TUTOR — Student Suspended (cancelled deal)
+// ============================================================
+    private void notifyTutorCancelledBySuspension(TutorStudentConnection conn) {
+        try {
+            Long tutorUserId = conn.getTutor().getUser().getId();
+            Long studentProfileId = conn.getStudent().getId();
+            String studentName = conn.getStudent().getFirstName() + " "
+                    + conn.getStudent().getLastName();
+            String studentImage = conn.getStudent().getProfilePictureUrl();
+            String subject = conn.getCourse() != null ? conn.getCourse().getSubject() : "a course";
+
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "connection_cancelled");
+            data.put("connectionId", String.valueOf(conn.getId()));
+            data.put("referenceId", String.valueOf(conn.getId()));
+            data.put("courseId", String.valueOf(conn.getCourse().getId()));
+            data.put("senderId", String.valueOf(studentProfileId));
+            data.put("senderName", studentName);
+            data.put("senderImage", studentImage != null ? studentImage : "");
+            data.put("badge", "0");
+
+            pushNotificationService.sendToUser(
+                    tutorUserId,
+                    studentName + " — " + subject,
+                    "The request was cancelled because the student's account was suspended.",
+                    data
+            );
+        } catch (Exception e) {
+            log.warn("Failed to notify tutor of cancelled deal: {}", e.getMessage());
+        }
+    }
+
+    // ============================================================
+// NOTIFY TUTOR — Student Suspended (disconnected connection)
+// ============================================================
+    private void notifyTutorDisconnectedBySuspension(TutorStudentConnection conn) {
+        try {
+            Long tutorUserId = conn.getTutor().getUser().getId();
+            Long studentProfileId = conn.getStudent().getId();
+            String studentName = conn.getStudent().getFirstName() + " "
+                    + conn.getStudent().getLastName();
+            String studentImage = conn.getStudent().getProfilePictureUrl();
+            String subject = conn.getCourse() != null ? conn.getCourse().getSubject() : "a course";
+
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "connection_disconnected");
+            data.put("connectionId", String.valueOf(conn.getId()));
+            data.put("referenceId", String.valueOf(conn.getId()));
+            data.put("courseId", String.valueOf(conn.getCourse().getId()));
+            data.put("senderId", String.valueOf(studentProfileId));
+            data.put("senderName", studentName);
+            data.put("senderImage", studentImage != null ? studentImage : "");
+            data.put("badge", "0");
+
+            pushNotificationService.sendToUser(
+                    tutorUserId,
+                    studentName + " — " + subject,
+                    "The connection was disconnected because the student's account was suspended.",
+                    data
+            );
+        } catch (Exception e) {
+            log.warn("Failed to notify tutor of disconnected connection: {}", e.getMessage());
+        }
     }
 }
