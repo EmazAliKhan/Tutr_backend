@@ -2,7 +2,7 @@ package com.tutr.backend.model.enums;
 
 public enum ReportStatus {
     PENDING,
-    REVIEWED,
+    UNDER_REVIEW,
     RESOLVED,
     DISMISSED
 }

@@ -1,10 +1,13 @@
 package com.tutr.backend.model.enums;
 
 public enum ReportReason {
-    Spam_or_Fake_Account,
     HARASSMENT,
-    Wrong_Information,
-    Payment_Issues,
-    Inappropriate_Messages,
+    ABUSIVE_LANGUAGE,
+    FRAUD_OR_SCAM,
+    NO_SHOW,
+    POOR_TEACHING,
+    UNPROFESSIONAL_CONDUCT,
+    FAKE_CREDENTIALS,
+    PAYMENT_DISPUTE,
     OTHER
 }

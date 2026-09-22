@@ -25,23 +25,41 @@ public class PushNotificationService {
     // ------------------------------------------------------------
     // TOKEN MANAGEMENT
     // ------------------------------------------------------------
+//    @Transactional
+//    public void saveToken(Long userId, String token, String platform) {
+//        if (userId == null || token == null || token.isBlank()) return;
+//
+//        Optional<DeviceToken> existing = tokenRepo.findByToken(token);
+//        if (existing.isPresent()) {
+//            DeviceToken dt = existing.get();
+//            dt.setUserId(userId);
+//            dt.setPlatform(platform != null ? platform : "android");
+//            tokenRepo.save(dt);
+//        } else {
+//            tokenRepo.save(DeviceToken.builder()
+//                    .userId(userId)
+//                    .token(token)
+//                    .platform(platform != null ? platform : "android")
+//                    .build());
+//        }
+//    }
+
     @Transactional
     public void saveToken(Long userId, String token, String platform) {
         if (userId == null || token == null || token.isBlank()) return;
 
-        Optional<DeviceToken> existing = tokenRepo.findByToken(token);
-        if (existing.isPresent()) {
-            DeviceToken dt = existing.get();
-            dt.setUserId(userId);
-            dt.setPlatform(platform != null ? platform : "android");
-            tokenRepo.save(dt);
-        } else {
-            tokenRepo.save(DeviceToken.builder()
-                    .userId(userId)
-                    .token(token)
-                    .platform(platform != null ? platform : "android")
-                    .build());
-        }
+        // 1. Delete ALL tokens for this user first — prevents duplicates from
+        //    stale devices and race conditions.
+        tokenRepo.deleteByUserId(userId);
+
+        // 2. Save the new token.
+        tokenRepo.save(DeviceToken.builder()
+                .userId(userId)
+                .token(token)
+                .platform(platform != null ? platform : "android")
+                .build());
+
+        log.info("Device token saved for user {} (single-device policy)", userId);
     }
 
     @Transactional

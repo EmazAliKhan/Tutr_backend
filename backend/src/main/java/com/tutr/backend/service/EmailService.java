@@ -156,4 +156,132 @@ public class EmailService {
 
         sendEmail(email, subject, message);
     }
+
+    // ============================================================
+// TUTOR SUSPENSION EMAIL
+// ============================================================
+    public void sendTutorSuspensionEmail(String email, String tutorName) {
+        log.debug("Preparing tutor suspension email for: {}", email);
+
+        String subject = "⚠️ Your TUTR Tutor Account Has Been Suspended";
+
+        String message = String.format("""
+        Dear %s,
+
+        Your TUTR tutor account has been temporarily suspended by our administration team.
+
+        What this means:
+        • You cannot log in to your account.
+        • Your pending and ongoing negotiations have been cancelled.
+        • All your active student connections have been disconnected.
+
+        If you believe this is a mistake, or would like to appeal this decision,
+        please contact our support team:
+
+        📧 tutr.verify@gmail.com
+
+        Regards,
+        The TUTR Team
+
+        ---
+        This is an automated message. Please do not reply directly to this email.
+        """, tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor");
+
+        sendEmail(email, subject, message);
+    }
+
+    // ============================================================
+// TUTOR REACTIVATION EMAIL
+// ============================================================
+    public void sendTutorReactivationEmail(String email, String tutorName) {
+        log.debug("Preparing tutor reactivation email for: {}", email);
+
+        String subject = "✅ Your TUTR Tutor Account Has Been Reactivated";
+
+        String message = String.format("""
+        Dear %s,
+
+        Great news! Your TUTR tutor account has been reactivated by our administration team.
+
+        You can now log in again and continue teaching.
+
+        What's restored:
+        • Full access to your account
+        • Ability to create courses and connect with students
+
+        Note: Any previous connections that were cancelled or disconnected
+        during the suspension will need to be re-established with your students.
+
+        Log in now to get started.
+
+        Regards,
+        The TUTR Team
+
+        ---
+        Need help? Contact us at tutr.verify@gmail.com
+        """, tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor");
+
+        sendEmail(email, subject, message);
+    }
+
+    // ============================================================
+// TUTOR WARNING EMAIL (caution notice)
+// ============================================================
+    public void sendTutorWarningEmail(String email, String tutorName, String reason, String adminNotes) {
+        log.debug("Preparing tutor warning email for: {}", email);
+
+        String reasonLabel = reason != null
+                ? reason.replace("_", " ").toLowerCase()
+                .replaceAll("\\b(\\w)", "$1")
+                : "policy violation";
+
+        // Capitalize first letter of each word
+        reasonLabel = java.util.Arrays.stream(reasonLabel.split(" "))
+                .map(w -> w.isEmpty() ? w : Character.toUpperCase(w.charAt(0)) + w.substring(1))
+                .reduce((a, b) -> a + " " + b)
+                .orElse("Policy Violation");
+
+        String subject = "⚠️ Official Warning — TUTR Tutor Account";
+
+        String message = String.format("""
+        Dear %s,
+
+        This is an official warning issued to your TUTR tutor account.
+
+        Reason for Warning:
+        %s
+
+        Admin Notes:
+        %s
+
+        ───────────────────────────────────────
+
+        ⚠️ CAUTION:
+
+        Please take this warning seriously. Warnings are recorded permanently
+        on your account. Continued violations of TUTR's community guidelines
+        may result in:
+
+        • Account suspension
+        • Termination of all active student connections
+        • Permanent removal from the platform
+
+        If you believe this warning was issued in error, you may respond by
+        contacting our support team at tutr.verify@gmail.com.
+
+        We encourage you to review our community guidelines and ensure your
+        teaching practices meet TUTR's standards.
+
+        Regards,
+        The TUTR Trust & Safety Team
+
+        ---
+        This is an automated message. Please do not reply directly to this email.
+        """,
+                tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor",
+                reasonLabel,
+                adminNotes != null && !adminNotes.isBlank() ? adminNotes : "No additional notes provided.");
+
+        sendEmail(email, subject, message);
+    }
 }

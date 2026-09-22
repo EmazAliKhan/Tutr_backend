@@ -141,6 +141,24 @@ public class FileStorageService {
         return "/uploads/chat-files/" + filename;
     }
 
+    // ============ REPORT EVIDENCE ============
+
+    public String storeReportEvidence(MultipartFile file, Long studentId) throws IOException {
+        Path uploadPath = buildUploadPath(baseUploadDir, "report-evidence");
+        ensureDirectoryExists(uploadPath);
+
+        String extension = extractExtension(file.getOriginalFilename(), ".jpg");
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "report_student_" + studentId + "_" + timestamp + "_" + UUID.randomUUID() + extension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath);
+
+        log.info("Report evidence saved: {}", filePath.toAbsolutePath());
+
+        return "/uploads/report-evidence/" + filename;
+    }
+
     // ============ DELETE ============
 
     public boolean deleteFile(String fileUrl) {
@@ -165,6 +183,8 @@ public class FileStorageService {
                 basePath = basePath.resolve("audio");
             } else if (fileUrl.contains("/chat-files/")) {
                 basePath = basePath.resolve("chat-files");
+            } else if (fileUrl.contains("/report-evidence/")) {
+                basePath = basePath.resolve("report-evidence");
             } else if (fileUrl.contains("/documents/")) {
                 // Extract document type from URL: /uploads/documents/cnic/xxx.pdf → "cnic"
                 String[] parts = fileUrl.split("/");
