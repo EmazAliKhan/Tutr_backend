@@ -73,18 +73,31 @@ public class ReportService {
         }
 
         // 3. Optional — attach specific connection
+        // 3. Pick the connection to attach to the report
         TutorStudentConnection selectedConnection = null;
+
         if (req.getConnectionId() != null) {
+            // Student explicitly chose a connection — must be CONFIRMED or DISCONNECTED
             selectedConnection = validConnections.stream()
                     .filter(c -> c.getId().equals(req.getConnectionId()))
                     .findFirst()
                     .orElse(null);
+
+            if (selectedConnection == null) {
+                throw new RuntimeException("Selected connection is not valid for reporting");
+            }
         } else {
-            // pick latest confirmed, else latest disconnected
+            // Auto-pick: most recent CONFIRMED, else most recent DISCONNECTED
+            // validConnections is already ordered by id DESC (newest first)
             selectedConnection = validConnections.stream()
                     .filter(c -> c.getStatus() == ConnectionStatus.CONFIRMED)
                     .findFirst()
-                    .orElse(validConnections.get(0));
+                    .orElseGet(() ->
+                            validConnections.stream()
+                                    .filter(c -> c.getStatus() == ConnectionStatus.DISCONNECTED)
+                                    .findFirst()
+                                    .orElse(null)
+                    );
         }
 
         // 4. Save report

@@ -1,11 +1,14 @@
 package com.tutr.backend.admin.service;
 
+import com.tutr.backend.admin.dto.report.WarningSummary;
 import com.tutr.backend.admin.dto.student.*;
+import com.tutr.backend.admin.repository.AdminStudentReportRepository;
 import com.tutr.backend.admin.repository.AdminStudentRepository;
 import com.tutr.backend.model.entity.*;
 import com.tutr.backend.model.enums.AccountStatus;
 import com.tutr.backend.model.enums.ConnectionStatus;
 import com.tutr.backend.model.enums.CourseCategory;
+import com.tutr.backend.model.enums.ReportStatus;
 import com.tutr.backend.model.enums.TeachingMode;
 import com.tutr.backend.repository.*;
 import com.tutr.backend.service.EmailService;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,6 +36,8 @@ public class AdminStudentService {
     private final EmailService emailService;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
+    private final AdminStudentReportRepository adminStudentReportRepository;
+    private final StudentWarningRepository studentWarningRepository;
 
     private static final List<ConnectionStatus> ACTIVE_DEAL_STATUSES = Arrays.asList(
             ConnectionStatus.PENDING, ConnectionStatus.NEGOTIATING);
@@ -44,14 +50,12 @@ public class AdminStudentService {
         log.debug("Admin fetching students — status={}, category={}, mode={}, search={}",
                 filter.getStatus(), filter.getCategory(), filter.getMode(), filter.getSearchQuery());
 
-        // ---- PHASE 1: DB filter (status + search) ----
         String search = (filter.getSearchQuery() == null || filter.getSearchQuery().trim().isEmpty())
                 ? null : filter.getSearchQuery().trim();
 
         List<StudentProfile> students = adminStudentRepository.findAdminStudents(
                 filter.getStatus(), search);
 
-        // ---- PHASE 2: Java filter (category + mode) ----
         List<StudentProfile> filtered = students.stream()
                 .filter(sp -> matchesCategoryAndMode(sp, filter.getCategory(), filter.getMode()))
                 .collect(Collectors.toList());
@@ -69,7 +73,6 @@ public class AdminStudentService {
                                            TeachingMode mode) {
         if (category == null && mode == null) return true;
 
-        // Only consider CONFIRMED enrollments
         List<TutorStudentConnection> enrolled = connectionRepository
                 .findByStudentIdAndStatus(student.getId(), ConnectionStatus.CONFIRMED);
 
@@ -92,23 +95,28 @@ public class AdminStudentService {
 
         User user = student.getUser();
 
-        // Enrolled courses (CONFIRMED connections)
         List<TutorStudentConnection> enrolled = connectionRepository
                 .findByStudentIdAndStatus(studentId, ConnectionStatus.CONFIRMED);
 
-        // Active deals (PENDING + NEGOTIATING)
         List<TutorStudentConnection> deals = connectionRepository
                 .findByStudentIdAndStatusIn(studentId, ACTIVE_DEAL_STATUSES);
 
-        // Favorites
         List<StudentFavorite> favorites = favoriteRepository.findByStudentId(studentId);
 
-        // Active Tutors = distinct tutors across confirmed enrollments
-        // (e.g. 3 courses with same tutor → 1)
         int activeTutors = (int) enrolled.stream()
                 .map(c -> c.getTutor().getId())
                 .distinct()
                 .count();
+
+        // ✅ NEW — report count (pending + under review)
+        int reportCount = (int) adminStudentReportRepository
+                .findByStudentIdOrderByReportedAtDesc(studentId).stream()
+                .filter(r -> r.getStatus() == ReportStatus.PENDING
+                        || r.getStatus() == ReportStatus.UNDER_REVIEW)
+                .count();
+
+        // ✅ NEW — warning count + history
+        int warningCount = (int) studentWarningRepository.countByStudentId(studentId);
 
         return AdminStudentDetailResponse.builder()
                 .id(student.getId())
@@ -128,6 +136,11 @@ public class AdminStudentService {
                 .education(buildTitle(student))
                 .totalCourses(enrolled.size())
                 .activeTutors(activeTutors)
+                // ✅ NEW fields
+                .reports(reportCount)
+                .warnings(warningCount)
+                .warningHistory(buildWarningHistory(studentId))
+                // Existing lists
                 .enrolledCourses(enrolled.stream()
                         .map(this::convertToEnrolledCourse)
                         .collect(Collectors.toList()))
@@ -141,8 +154,8 @@ public class AdminStudentService {
     }
 
     // ============================================================
-// SUSPEND STUDENT (with email + auto-cancel connections)
-// ============================================================
+    // SUSPEND STUDENT
+    // ============================================================
     @Transactional
     public void suspendStudent(Long studentId) {
         log.debug("Admin suspending student id={}", studentId);
@@ -156,12 +169,10 @@ public class AdminStudentService {
             throw new RuntimeException("Student is already suspended");
         }
 
-        // 1. Update status
         user.setAccountStatus(AccountStatus.SUSPENDED);
         userRepository.save(user);
         userRepository.flush();
 
-        // 2. Cancel PENDING + NEGOTIATING connections
         List<TutorStudentConnection> activeDeals = connectionRepository
                 .findByStudentIdAndStatusIn(studentId, ACTIVE_DEAL_STATUSES);
 
@@ -170,12 +181,9 @@ public class AdminStudentService {
             conn.setIsActive(false);
             conn.setExpiresAt(null);
             connectionRepository.save(conn);
-
-            // Notify the tutor
             notifyTutorCancelledBySuspension(conn);
         }
 
-        // 3. Disconnect CONFIRMED connections
         List<TutorStudentConnection> confirmed = connectionRepository
                 .findByStudentIdAndStatus(studentId, ConnectionStatus.CONFIRMED);
 
@@ -183,11 +191,9 @@ public class AdminStudentService {
             conn.setStatus(ConnectionStatus.DISCONNECTED);
             conn.setIsActive(false);
             connectionRepository.save(conn);
-
             notifyTutorDisconnectedBySuspension(conn);
         }
 
-        // 4. Send email
         try {
             String fullName = student.getFirstName() + " " + student.getLastName();
             emailService.sendSuspensionEmail(user.getEmail(), fullName);
@@ -321,8 +327,25 @@ public class AdminStudentService {
     }
 
     // ============================================================
-// NOTIFY TUTOR — Student Suspended (cancelled deal)
-// ============================================================
+    // NEW — WARNING HISTORY BUILDER
+    // ============================================================
+    private List<WarningSummary> buildWarningHistory(Long studentId) {
+        return studentWarningRepository.findByStudentId(studentId).stream()
+                .sorted(Comparator.comparing(StudentWarning::getIssuedAt).reversed())
+                .limit(10)
+                .map(w -> WarningSummary.builder()
+                        .id(w.getId())
+                        .reason(w.getReason())
+                        .issuedAt(w.getIssuedAt())
+                        .adminNotes(w.getAdminNotes())
+                        .sourceReportId(w.getSourceReportId())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // ============================================================
+    // NOTIFY TUTOR — Student Suspended (cancelled deal)
+    // ============================================================
     private void notifyTutorCancelledBySuspension(TutorStudentConnection conn) {
         try {
             Long tutorUserId = conn.getTutor().getUser().getId();
@@ -354,8 +377,8 @@ public class AdminStudentService {
     }
 
     // ============================================================
-// NOTIFY TUTOR — Student Suspended (disconnected connection)
-// ============================================================
+    // NOTIFY TUTOR — Student Suspended (disconnected connection)
+    // ============================================================
     private void notifyTutorDisconnectedBySuspension(TutorStudentConnection conn) {
         try {
             Long tutorUserId = conn.getTutor().getUser().getId();

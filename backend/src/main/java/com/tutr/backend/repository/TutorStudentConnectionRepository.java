@@ -152,7 +152,8 @@ public interface TutorStudentConnectionRepository extends JpaRepository<TutorStu
     @Query("SELECT c FROM TutorStudentConnection c " +
             "WHERE c.student.id = :studentId " +
             "AND c.tutor.id = :tutorId " +
-            "AND c.status IN :statuses")
+            "AND c.status IN :statuses " +
+            "ORDER BY c.id DESC")
     List<TutorStudentConnection> findByStudentIdAndTutorIdAndStatusIn(
             @Param("studentId") Long studentId,
             @Param("tutorId") Long tutorId,

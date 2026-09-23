@@ -39,4 +39,8 @@ public class AdminStudentDetailResponse {
     private List<AdminStudentCourseItem> enrolledCourses;
     private List<AdminStudentFavoriteItem> favoriteCourses;
     private List<AdminStudentDealItem> deals;
+
+    private int reports;
+    private int warnings;
+    private List<com.tutr.backend.admin.dto.report.WarningSummary> warningHistory;
 }

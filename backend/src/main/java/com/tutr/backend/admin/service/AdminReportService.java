@@ -151,7 +151,12 @@ public class AdminReportService {
         }
 
         // ---- Finalize report ----
-        report.setStatus(ReportStatus.RESOLVED);
+        if (action == ReportAction.DISMISSED) {
+            report.setStatus(ReportStatus.DISMISSED);
+        } else {
+            report.setStatus(ReportStatus.RESOLVED);
+        }
+
         report.setActionTaken(action);
         report.setAdminNotes(req.getAdminNotes());
         report.setReviewedAt(LocalDateTime.now());
@@ -262,15 +267,36 @@ public class AdminReportService {
                     + report.getTutor().getLastName();
             String tutorImage = report.getTutor().getProfilePictureUrl();
 
-            String outcomeText = switch (report.getActionTaken()) {
-                case WARNING_ISSUED -> "A warning has been issued to the tutor.";
-                case SUSPENDED -> "The tutor's account has been suspended.";
-                case DISMISSED -> "No violation was found.";
-                default -> "Your report has been resolved.";
-            };
+            // Title + body depend on the outcome
+            String title;
+            String outcomeText;
+            String notifType;
+
+            switch (report.getActionTaken()) {
+                case WARNING_ISSUED -> {
+                    title = "Report Resolved — " + tutorName;
+                    outcomeText = "A warning has been issued to the tutor.";
+                    notifType = "report_resolved";
+                }
+                case SUSPENDED -> {
+                    title = "Report Resolved — " + tutorName;
+                    outcomeText = "The tutor's account has been suspended.";
+                    notifType = "report_resolved";
+                }
+                case DISMISSED -> {
+                    title = "Report Dismissed — " + tutorName;
+                    outcomeText = "No violation was found. Your report has been closed.";
+                    notifType = "report_dismissed";
+                }
+                default -> {
+                    title = "Report Updated — " + tutorName;
+                    outcomeText = "Your report has been updated.";
+                    notifType = "report_updated";
+                }
+            }
 
             Map<String, String> data = new HashMap<>();
-            data.put("type", "report_resolved");
+            data.put("type", notifType);
             data.put("referenceId", String.valueOf(report.getId()));
             data.put("senderName", "TUTR Team");
             data.put("senderImage", "");
@@ -278,13 +304,13 @@ public class AdminReportService {
 
             pushNotificationService.sendToUser(
                     studentUserId,
-                    "Report Resolved — " + tutorName,
+                    title,
                     outcomeText,
                     data
             );
 
-            log.info("Reporter notified: studentUserId={}, reportId={}",
-                    studentUserId, report.getId());
+            log.info("Reporter notified: studentUserId={}, reportId={}, action={}",
+                    studentUserId, report.getId(), report.getActionTaken());
         } catch (Exception e) {
             log.warn("Failed to notify reporter: {}", e.getMessage());
         }

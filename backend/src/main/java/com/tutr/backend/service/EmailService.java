@@ -284,4 +284,69 @@ public class EmailService {
 
         sendEmail(email, subject, message);
     }
+
+    // ============================================================
+// STUDENT WARNING EMAIL
+// ============================================================
+    public void sendStudentWarningEmail(String email,
+                                        String studentName,
+                                        String reason,
+                                        String adminNotes) {
+        log.debug("Preparing student warning email for: {}", email);
+
+        // Format reason: "NON_PAYMENT" → "Non Payment"
+        String reasonLabel = reason != null
+                ? java.util.Arrays.stream(reason.replace("_", " ").toLowerCase().split(" "))
+                .map(w -> w.isEmpty() ? w
+                        : Character.toUpperCase(w.charAt(0)) + w.substring(1))
+                .reduce((a, b) -> a + " " + b)
+                .orElse("Policy Violation")
+                : "Policy Violation";
+
+        String subject = "⚠️ Official Warning — TUTR Student Account";
+
+        String message = String.format("""
+        Dear %s,
+
+        This is an official warning issued to your TUTR student account.
+
+        Reason for Warning:
+        %s
+
+        Admin Notes:
+        %s
+
+        ───────────────────────────────────────
+
+        ⚠️ CAUTION:
+
+        Please take this warning seriously. Warnings are recorded permanently
+        on your account. Continued violations of TUTR's community guidelines
+        may result in:
+
+        • Account suspension
+        • Loss of access to your active tutors and courses
+        • Permanent removal from the platform
+
+        If you believe this warning was issued in error, you may respond by
+        contacting our support team at tutr.verify@gmail.com.
+
+        We encourage you to review our Community Guidelines and ensure your
+        conduct meets TUTR's standards.
+
+        Regards,
+        The TUTR Trust & Safety Team
+
+        ---
+        This is an automated message. Please do not reply directly to this email.
+        """,
+                studentName != null && !studentName.isBlank() ? studentName : "Student",
+                reasonLabel,
+                adminNotes != null && !adminNotes.isBlank()
+                        ? adminNotes
+                        : "No additional notes provided.");
+
+        sendEmail(email, subject, message);
+    }
+
 }
