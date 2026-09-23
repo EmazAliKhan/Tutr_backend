@@ -349,4 +349,118 @@ public class EmailService {
         sendEmail(email, subject, message);
     }
 
+    // ============================================================
+// TUTOR APPROVAL EMAIL
+// ============================================================
+    public void sendTutorApprovalEmail(String email, String tutorName) {
+        log.debug("Preparing tutor approval email for: {}", email);
+
+        String subject = "✅ Your TUTR Account Has Been Approved";
+
+        String message = String.format("""
+        Dear %s,
+
+        Congratulations! Your TUTR tutor account has been verified and approved.
+
+        You can now log in and start:
+        • Adding your courses
+        • Setting your prices and schedules
+        • Connecting with students
+
+        Login now to get started.
+
+        Regards,
+        The TUTR Team
+
+        ---
+        Need help? Contact us at tutr.verify@gmail.com
+        """, tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor");
+
+        sendEmail(email, subject, message);
+    }
+
+    // ============================================================
+// TUTOR SOFT REJECTION EMAIL
+// ============================================================
+    public void sendTutorRejectionEmail(String email,
+                                        String tutorName,
+                                        String rejectionReason) {
+        log.debug("Preparing tutor rejection email for: {}", email);
+
+        String subject = "⚠️ Action Required — TUTR Document Verification";
+
+        String message = String.format("""
+        Dear %s,
+
+        Unfortunately, your verification documents could not be approved. You can
+        fix the issues below and re-upload them for review.
+
+        Reason:
+        %s
+
+        Steps to fix:
+        1. Log in to your TUTR account.
+        2. Review the reason above.
+        3. Re-upload clear, valid documents.
+        4. Submit for re-review.
+
+        We will notify you once the new submission is reviewed.
+
+        Regards,
+        The TUTR Team
+
+        ---
+        Need help? Contact us at tutr.verify@gmail.com
+        """,
+                tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor",
+                rejectionReason != null && !rejectionReason.isBlank()
+                        ? rejectionReason
+                        : "Documents were unclear or invalid.");
+
+        sendEmail(email, subject, message);
+    }
+
+    // ============================================================
+// TUTOR PERMANENT BAN EMAIL
+// ============================================================
+    public void sendTutorBanEmail(String email,
+                                  String tutorName,
+                                  String reason) {
+        log.debug("Preparing tutor ban email for: {}", email);
+
+        String subject = "❌ TUTR Account Permanently Disabled";
+
+        String message = String.format("""
+        Dear %s,
+
+        Your TUTR tutor account has been permanently disabled because the
+        verification documents you submitted were found to be fraudulent or
+        in serious violation of our policies.
+
+        Reason:
+        %s
+
+        What this means:
+        • You cannot log in to TUTR
+        • You cannot create a new account with the same email
+        • Your existing data has been deactivated
+
+        If you believe this decision was made in error, you may respond by
+        contacting our support team at tutr.verify@gmail.com with supporting
+        evidence.
+
+        Regards,
+        The TUTR Trust & Safety Team
+
+        ---
+        This is an automated message. Please do not reply directly.
+        """,
+                tutorName != null && !tutorName.isBlank() ? tutorName : "Tutor",
+                reason != null && !reason.isBlank()
+                        ? reason
+                        : "Fraudulent or invalid documents.");
+
+        sendEmail(email, subject, message);
+    }
+
 }

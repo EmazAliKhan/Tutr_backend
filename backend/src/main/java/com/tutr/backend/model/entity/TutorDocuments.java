@@ -24,6 +24,12 @@ public class TutorDocuments {
     private String cnicImageUrl;
     private String certificateImageUrl;
 
+    @Column(length = 1000)
+    private String rejectionReason;
+
+    @Builder.Default
+    private int resubmissionCount = 0;
+
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus = VerificationStatus.APPROVED;
 

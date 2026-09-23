@@ -67,29 +67,35 @@ public class AdminDashboardService {
     // STATS
     // ============================================================
     private AdminDashboardStatsResponse buildStats() {
-        Long totalUsers = userRepository.countAllUsers();
-        Long totalTutors = userRepository.countByRole(Role.TUTOR);
-        Long totalStudents = userRepository.countByRole(Role.STUDENT);
+        // ✅ Totals — ACTIVE + INACTIVE only
+        Long totalUsers = userRepository.countActiveAndInactiveUsers();
+        Long totalTutors = userRepository.countByRoleAndActiveOrInactive(Role.TUTOR);
+        Long totalStudents = userRepository.countByRoleAndActiveOrInactive(Role.STUDENT);
         Long pendingVerifications = userRepository.countPendingVerifications();
 
-        // --- Growth calculation ---
+        // --- Growth windows ---
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime currentStart  = now.minusDays(30);
         LocalDateTime previousStart = now.minusDays(60);
 
-        Double usersGrowth    = computeGrowth(
-                userRepository.countAllBetween(previousStart, currentStart),
-                userRepository.countAllBetween(currentStart, now)
+        // ✅ Growth — ACTIVE + INACTIVE only, in each 30-day window
+        Double usersGrowth = computeGrowth(
+                userRepository.countActiveAndInactiveBetween(previousStart, currentStart),
+                userRepository.countActiveAndInactiveBetween(currentStart, now)
         );
 
-        Double tutorsGrowth   = computeGrowth(
-                userRepository.countByRoleBetween(Role.TUTOR, previousStart, currentStart),
-                userRepository.countByRoleBetween(Role.TUTOR, currentStart, now)
+        Double tutorsGrowth = computeGrowth(
+                userRepository.countByRoleAndActiveOrInactiveBetween(
+                        Role.TUTOR, previousStart, currentStart),
+                userRepository.countByRoleAndActiveOrInactiveBetween(
+                        Role.TUTOR, currentStart, now)
         );
 
         Double studentsGrowth = computeGrowth(
-                userRepository.countByRoleBetween(Role.STUDENT, previousStart, currentStart),
-                userRepository.countByRoleBetween(Role.STUDENT, currentStart, now)
+                userRepository.countByRoleAndActiveOrInactiveBetween(
+                        Role.STUDENT, previousStart, currentStart),
+                userRepository.countByRoleAndActiveOrInactiveBetween(
+                        Role.STUDENT, currentStart, now)
         );
 
         return AdminDashboardStatsResponse.builder()

@@ -8,15 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;  // ← THIS IS MISSING
-
-
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
 public class TutorDocumentsController {
-
 
     private final TutorDocumentsService documentsService;
 
@@ -32,7 +29,6 @@ public class TutorDocumentsController {
             System.out.println("cnicImage: " + (cnicImage != null ? cnicImage.getOriginalFilename() : "null"));
             System.out.println("certificateImage: " + (certificateImage != null ? certificateImage.getOriginalFilename() : "null"));
 
-            // Create request object
             TutorDocumentsRequest request = new TutorDocumentsRequest();
             request.setUserId(userId);
             request.setCnicImage(cnicImage);
@@ -66,7 +62,8 @@ public class TutorDocumentsController {
             @PathVariable Long documentId,
             @RequestParam VerificationStatus status) {
         try {
-            TutorDocuments documents = documentsService.verifyDocuments(documentId, status);
+            TutorDocuments documents = documentsService.verifyDocuments(
+                    documentId, status, null, false);
             return ResponseEntity.ok(documents);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());

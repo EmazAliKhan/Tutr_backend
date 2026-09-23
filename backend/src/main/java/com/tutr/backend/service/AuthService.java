@@ -57,6 +57,14 @@ public class AuthService {
             );
         }
 
+        // Check account status — block permanently banned users
+        if (user.getAccountStatus() == AccountStatus.BANNED) {
+            log.warn("Banned user attempted login: {}", user.getEmail());
+            throw new RuntimeException(
+                    "This account has been permanently disabled due to policy violations. "
+                            + "Contact support if you believe this is a mistake.");
+        }
+
         // Validate based on role
         if (user.getRole() == Role.TUTOR) {
             validateTutorLogin(user);
@@ -124,7 +132,10 @@ public class AuthService {
             case 3:
                 documentsRepository.findByUserId(user.getId()).ifPresent(docs -> {
                     if (docs.getVerificationStatus() == VerificationStatus.REJECTED) {
-                        log.warn("Tutor {} has rejected documents but is allowed to login", user.getEmail());
+                        log.warn("Tutor {} has rejected documents", user.getEmail());
+                        throw new RuntimeException(
+                                "Your documents were rejected. Please re-upload."
+                        );
                     }
                 });
                 break;

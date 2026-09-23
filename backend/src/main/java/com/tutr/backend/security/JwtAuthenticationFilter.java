@@ -51,13 +51,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (user != null) {
 
-                    //  NEW: Block suspended users immediately (except on auth endpoints)
-                    if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
-                        String path = request.getRequestURI();
-                        // Allow login/logout/auth endpoints to still respond so user gets a proper message
-                        boolean isAuthEndpoint = path.startsWith("/api/auth");
+                    String path = request.getRequestURI();
+                    boolean isAuthEndpoint = path.startsWith("/api/auth");
 
-                        if (!isAuthEndpoint) {
+                    // ============================================================
+                    // ACCOUNT STATE GATES
+                    // ============================================================
+                    if (!isAuthEndpoint) {
+                        AccountStatus status = user.getAccountStatus();
+
+                        // --- SUSPENDED ---
+                        if (status == AccountStatus.SUSPENDED) {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             response.getWriter().write(
@@ -66,8 +70,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             );
                             return;
                         }
+
+                        // --- BANNED (permanent) ---
+                        if (status == AccountStatus.BANNED) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\":\"ACCOUNT_BANNED\"," +
+                                            "\"message\":\"This account has been permanently disabled.\"}"
+                            );
+                            return;
+                        }
+
+                        // --- REJECTED (soft) — allow document upload ---
+                        if (status == AccountStatus.REJECTED) {
+                            boolean isDocumentUpload =
+                                    path.contains("/documents/upload")
+                                            || path.contains("/api/register/tutor/documents");
+
+                            if (!isDocumentUpload) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response.getWriter().write(
+                                        "{\"error\":\"VERIFICATION_REJECTED\"," +
+                                                "\"message\":\"Your verification documents were rejected. " +
+                                                "Please upload new documents.\"}"
+                                );
+                                return;
+                            }
+                            // Allow doc upload to proceed
+                        }
                     }
 
+                    // ============================================================
+                    // SET AUTHENTICATION
+                    // ============================================================
                     if (SecurityContextHolder.getContext().getAuthentication() == null) {
                         var authorities = List.of(
                                 new SimpleGrantedAuthority("ROLE_" + role)

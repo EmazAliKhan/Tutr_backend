@@ -189,7 +189,7 @@ public class FileStorageService {
                 // Extract document type from URL: /uploads/documents/cnic/xxx.pdf → "cnic"
                 String[] parts = fileUrl.split("/");
                 if (parts.length >= 4) {
-                    basePath = basePath.resolve("documents").resolve(parts[2]);
+                    basePath = basePath.resolve("documents").resolve(parts[3]);
                 }
             }
 

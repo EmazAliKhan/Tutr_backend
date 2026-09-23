@@ -76,4 +76,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
 """)
     Long countAllBetween(@Param("from") LocalDateTime from,
                          @Param("to") LocalDateTime to);
+
+    // ============================================================
+// COUNT — only ACTIVE + INACTIVE
+// ============================================================
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.accountStatus IN ('ACTIVE', 'INACTIVE')")
+    Long countActiveAndInactiveUsers();
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.role = :role " +
+            "AND u.accountStatus IN ('ACTIVE', 'INACTIVE')")
+    Long countByRoleAndActiveOrInactive(@Param("role") Role role);
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.accountStatus IN ('ACTIVE', 'INACTIVE') " +
+            "AND u.createdAt BETWEEN :start AND :end")
+    Long countActiveAndInactiveBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(u) FROM User u " +
+            "WHERE u.role = :role " +
+            "AND u.accountStatus IN ('ACTIVE', 'INACTIVE') " +
+            "AND u.createdAt BETWEEN :start AND :end")
+    Long countByRoleAndActiveOrInactiveBetween(
+            @Param("role") Role role,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }
