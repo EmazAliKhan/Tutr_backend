@@ -15,6 +15,6 @@ public class AdminNotificationResponse {
     private String body;
     private Long referenceId;
     private String navigationPath;
-    private boolean isRead;
+    private Boolean  isRead;
     private LocalDateTime createdAt;
 }
