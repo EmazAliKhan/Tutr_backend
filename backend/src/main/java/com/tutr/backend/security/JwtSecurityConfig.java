@@ -30,19 +30,21 @@ public class JwtSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())     // uses your WebSocketCorsConfig
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .authorizeHttpRequests(auth -> auth
+                // ✅ Disable X-Frame-Options so PDFs can render inside iframes
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable())
+                )
 
-                        // -------- PUBLIC ENDPOINTS --------
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/register/**",
                                 "/api/verify/**",
                                 "/api/admin/auth/login",
-
                                 "/api/profile-image/upload",
                                 "/api/student-image/upload",
                                 "/api/documents/upload",
@@ -52,8 +54,6 @@ public class JwtSecurityConfig {
                                 "/ws-sockjs", "/ws-sockjs/**",
                                 "/uploads/**"
                         ).permitAll()
-
-                        // -------- EVERYTHING ELSE REQUIRES JWT --------
                         .anyRequest().authenticated()
                 )
 
