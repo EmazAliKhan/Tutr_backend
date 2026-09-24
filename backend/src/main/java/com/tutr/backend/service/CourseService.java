@@ -35,9 +35,10 @@ public class CourseService {
     private final TutorProfileRepository tutorProfileRepository;
     private final TutorStudentConnectionRepository connectionRepository;
     private final StudentFavoriteRepository favoriteRepository;
-    private final RatingReviewRepository ratingRepository;   // ✅ merged duplicate field
+    private final RatingReviewRepository ratingRepository;
     private final FavoriteService favoriteService;
     private final BlockService blockService;
+    private final com.tutr.backend.admin.service.AdminNotificationService adminNotificationService;
 
     // ============================================================
     // HELPER METHODS — TIME PARSING
@@ -172,6 +173,20 @@ public class CourseService {
         Course saved = courseRepository.save(course);
         log.info("Course created: id={}, subject={}, tutor={}",
                 saved.getId(), saved.getSubject(), tutorProfile.getId());
+
+        //  Notify all admins about new course
+        try {
+            String tutorName = tutorProfile.getFirstName() + " " + tutorProfile.getLastName();
+            adminNotificationService.notifyAllAdmins(
+                    com.tutr.backend.admin.model.AdminNotificationType.NEW_COURSE,
+                    "New Course Added",
+                    tutorName + " added a new course: " + saved.getSubject(),
+                    saved.getId(),
+                    "/courses"
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send admin notification for new course: {}", e.getMessage());
+        }
         return saved;
     }
 

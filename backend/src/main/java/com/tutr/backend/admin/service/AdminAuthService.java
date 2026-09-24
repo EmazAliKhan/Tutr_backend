@@ -26,6 +26,7 @@ public class AdminAuthService {
 
     private final AdminUserRepository adminUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final com.tutr.backend.service.EmailService emailService;
     private final JwtUtil jwtUtil;
     private final AdminMapper adminMapper;
 
@@ -48,6 +49,16 @@ public class AdminAuthService {
 
         admin.setLastLoginAt(LocalDateTime.now());
         adminUserRepository.save(admin);
+
+        //  Send login notification email
+        try {
+            String adminName = admin.getFirstName() != null
+                    ? (admin.getFirstName() + " " + (admin.getLastName() != null ? admin.getLastName() : "")).trim()
+                    : "Admin";
+            emailService.sendAdminLoginEmail(admin.getEmail(), adminName);
+        } catch (Exception e) {
+            log.warn("Failed to send admin login email: {}", e.getMessage());
+        }
 
         String token = jwtUtil.generateToken(
                 admin.getId(),

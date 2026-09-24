@@ -28,6 +28,7 @@ public class TutorDocumentsService {
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
     private final TutorProfileRepository tutorProfileRepository;
+    private final com.tutr.backend.admin.service.AdminNotificationService adminNotificationService;
 
     // ============================================================
     // UPLOAD DOCUMENTS
@@ -103,6 +104,19 @@ public class TutorDocumentsService {
             log.info("Documents re-submitted: documentsId={}, userId={}, status=PENDING",
                     saved.getId(), user.getId());
 
+            //  Notify all admins about the verification request
+            try {
+                String tutorName = resolveTutorName(user);
+                adminNotificationService.notifyAllAdmins(
+                        com.tutr.backend.admin.model.AdminNotificationType.TUTOR_VERIFICATION_REQUEST,
+                        "Tutor Verification Request",
+                        tutorName + " submitted documents for verification.",
+                        saved.getId(),
+                        "/verifications"
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send admin notification for tutor verification: {}", e.getMessage());
+            }
             return saved;
 
         } catch (IOException e) {

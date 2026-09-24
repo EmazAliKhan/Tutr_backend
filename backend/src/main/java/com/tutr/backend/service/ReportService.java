@@ -28,6 +28,7 @@ public class ReportService {
     private final TutorProfileRepository tutorRepository;
     private final TutorStudentConnectionRepository connectionRepository;
     private final PushNotificationService pushNotificationService;
+    private final com.tutr.backend.admin.service.AdminNotificationService adminNotificationService;
 
     // Statuses that allow a student to report
     private static final List<ConnectionStatus> REPORTABLE_STATUSES =
@@ -142,19 +143,20 @@ public class ReportService {
         log.info("Report submitted: id={}, student={}, tutor={}, reason={}",
                 saved.getId(), studentId, tutor.getId(), req.getReason());
 
-        // 5. Notify admins — for now, send in-app to a placeholder "admin" userId
-        // TODO: after Team Access Control, loop over all admin user IDs
+        // 5. Notify all admins about the new report
         try {
             String studentName = student.getFirstName() + " " + student.getLastName();
-            String title = "New Report Filed";
-            String body = studentName + " reported " + tutor.getFirstName()
-                    + " " + tutor.getLastName() + " — " + req.getReason();
+            String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
 
-            // Placeholder: admins typically have role = ADMIN; iterate later
-            // For now we log it — will be wired when admin user list is available
-            log.info("Admin notification pending: {}", body);
+            adminNotificationService.notifyAllAdmins(
+                    com.tutr.backend.admin.model.AdminNotificationType.NEW_REPORT,
+                    "New Report Filed",
+                    studentName + " reported " + tutorName + " — " + req.getReason(),
+                    saved.getId(),
+                    "/reports"
+            );
         } catch (Exception e) {
-            log.warn("Failed to notify admins: {}", e.getMessage());
+            log.warn("Failed to send admin notification for report: {}", e.getMessage());
         }
 
         return convertToResponse(saved, false);

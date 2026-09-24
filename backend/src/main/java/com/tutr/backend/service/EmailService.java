@@ -463,4 +463,34 @@ public class EmailService {
         sendEmail(email, subject, message);
     }
 
+    // ============================================================
+// ADMIN LOGIN NOTIFICATION EMAIL
+// ============================================================
+    public void sendAdminLoginEmail(String email, String adminName) {
+        log.debug("Preparing admin login email for: {}", email);
+
+        String subject = "New Admin Login Detected — TUTR";
+
+        String timeStr = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a"));
+
+        String message = String.format("""
+        Hi %s,
+
+        A new login to your TUTR admin account was detected.
+
+        Time: %s
+
+        If this was not you, please change your password immediately.
+
+        — TUTR Admin Team
+
+        ---
+        This is an automated message. Please do not reply directly.
+        """,
+                adminName != null && !adminName.isBlank() ? adminName : "Admin",
+                timeStr);
+
+        sendEmail(email, subject, message);
+    }
 }

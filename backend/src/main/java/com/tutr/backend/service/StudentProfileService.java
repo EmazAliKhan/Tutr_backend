@@ -25,6 +25,7 @@ public class StudentProfileService {
     private final StudentProfileRepository studentProfileRepository;
     private final FileStorageService fileStorageService;
     private final EmailVerificationService emailVerificationService;
+    private final com.tutr.backend.admin.service.AdminNotificationService adminNotificationService;
 
     // ============================================================
     // CREATE STUDENT PROFILE
@@ -67,6 +68,20 @@ public class StudentProfileService {
 
         StudentProfile saved = studentProfileRepository.save(profile);
         log.info("Student profile created: profileId={}, userId={}", saved.getId(), user.getId());
+
+        //  Notify all admins about new student signup
+        try {
+            String studentName = saved.getFirstName() + " " + saved.getLastName();
+            adminNotificationService.notifyAllAdmins(
+                    com.tutr.backend.admin.model.AdminNotificationType.STUDENT_SIGNUP,
+                    "New Student Registration",
+                    studentName + " registered as a new student.",
+                    saved.getId(),
+                    "/students"
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send admin notification for student signup: {}", e.getMessage());
+        }
         return saved;
     }
 
