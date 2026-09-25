@@ -1,7 +1,7 @@
 package com.tutr.backend.admin.service;
 
-import com.tutr.backend.admin.model.AdminPasswordResetOtp;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminPasswordResetOtp;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.repository.AdminPasswordResetOtpRepository;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;

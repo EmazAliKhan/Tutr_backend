@@ -1,9 +1,9 @@
 package com.tutr.backend.admin.service;
 
 import com.tutr.backend.admin.dto.notification.AdminNotificationResponse;
-import com.tutr.backend.admin.model.AdminNotification;
-import com.tutr.backend.admin.model.AdminNotificationType;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminNotification;
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.repository.AdminNotificationRepository;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;

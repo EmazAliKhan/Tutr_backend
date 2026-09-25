@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import com.tutr.backend.dto.course.CourseCard;
 import com.tutr.backend.dto.course.CourseDetail;
 import com.tutr.backend.dto.course.CourseRequest;
@@ -178,7 +179,7 @@ public class CourseService {
         try {
             String tutorName = tutorProfile.getFirstName() + " " + tutorProfile.getLastName();
             adminNotificationService.notifyAllAdmins(
-                    com.tutr.backend.admin.model.AdminNotificationType.NEW_COURSE,
+                    AdminNotificationType.NEW_COURSE,
                     "New Course Added",
                     tutorName + " added a new course: " + saved.getSubject(),
                     saved.getId(),

@@ -1,4 +1,4 @@
-package com.tutr.backend.admin.model;
+package com.tutr.backend.admin.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

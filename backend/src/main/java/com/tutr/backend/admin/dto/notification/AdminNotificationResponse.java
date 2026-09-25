@@ -1,6 +1,6 @@
 package com.tutr.backend.admin.dto.notification;
 
-import com.tutr.backend.admin.model.AdminNotificationType;
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import lombok.Builder;
 import lombok.Data;
 

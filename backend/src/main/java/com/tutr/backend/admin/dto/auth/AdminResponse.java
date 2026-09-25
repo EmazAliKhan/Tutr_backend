@@ -1,6 +1,6 @@
 package com.tutr.backend.admin.dto.auth;
 
-import com.tutr.backend.admin.model.AdminRole;
+import com.tutr.backend.admin.model.enums.AdminRole;
 import lombok.Builder;
 import lombok.Data;
 

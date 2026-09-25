@@ -1,6 +1,6 @@
 package com.tutr.backend.admin.repository;
 
-import com.tutr.backend.admin.model.AdminNotification;
+import com.tutr.backend.admin.model.entity.AdminNotification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

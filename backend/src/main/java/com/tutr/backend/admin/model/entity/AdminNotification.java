@@ -1,5 +1,6 @@
-package com.tutr.backend.admin.model;
+package com.tutr.backend.admin.model.entity;
 
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 

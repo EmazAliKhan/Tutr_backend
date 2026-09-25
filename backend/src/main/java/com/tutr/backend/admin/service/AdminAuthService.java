@@ -4,7 +4,7 @@ import com.tutr.backend.admin.dto.auth.AdminLoginRequest;
 import com.tutr.backend.admin.dto.auth.AdminLoginResponse;
 import com.tutr.backend.admin.exception.AdminNotFoundException;
 import com.tutr.backend.admin.mapper.AdminMapper;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import com.tutr.backend.security.JwtUtil;
 import lombok.RequiredArgsConstructor;

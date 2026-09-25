@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import com.tutr.backend.dto.report.ReportCreateRequest;
 import com.tutr.backend.dto.report.ReportResponse;
 import com.tutr.backend.model.entity.*;
@@ -149,7 +150,7 @@ public class ReportService {
             String tutorName = tutor.getFirstName() + " " + tutor.getLastName();
 
             adminNotificationService.notifyAllAdmins(
-                    com.tutr.backend.admin.model.AdminNotificationType.NEW_REPORT,
+                    AdminNotificationType.NEW_REPORT,
                     "New Report Filed",
                     studentName + " reported " + tutorName + " — " + req.getReason(),
                     saved.getId(),

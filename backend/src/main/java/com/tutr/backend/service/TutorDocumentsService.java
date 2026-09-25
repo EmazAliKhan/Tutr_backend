@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import com.tutr.backend.dto.profile.TutorDocumentsRequest;
 import com.tutr.backend.model.entity.TutorDocuments;
 import com.tutr.backend.model.entity.User;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -108,7 +108,7 @@ public class TutorDocumentsService {
             try {
                 String tutorName = resolveTutorName(user);
                 adminNotificationService.notifyAllAdmins(
-                        com.tutr.backend.admin.model.AdminNotificationType.TUTOR_VERIFICATION_REQUEST,
+                        AdminNotificationType.TUTOR_VERIFICATION_REQUEST,
                         "Tutor Verification Request",
                         tutorName + " submitted documents for verification.",
                         saved.getId(),

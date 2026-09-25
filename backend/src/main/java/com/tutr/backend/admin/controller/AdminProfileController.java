@@ -2,7 +2,7 @@ package com.tutr.backend.admin.controller;
 
 import com.tutr.backend.admin.dto.auth.ChangeAdminPasswordRequest;
 import com.tutr.backend.admin.dto.auth.UpdateAdminProfileRequest;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.service.AdminAuthService;
 import com.tutr.backend.admin.service.AdminProfileService;
 import lombok.RequiredArgsConstructor;

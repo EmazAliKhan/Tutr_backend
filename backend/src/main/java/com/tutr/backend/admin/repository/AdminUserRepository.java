@@ -1,7 +1,7 @@
 package com.tutr.backend.admin.repository;
 
-import com.tutr.backend.admin.model.AdminRole;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.enums.AdminRole;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

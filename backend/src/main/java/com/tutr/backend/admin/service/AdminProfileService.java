@@ -7,7 +7,7 @@ import com.tutr.backend.admin.exception.AdminEmailExistsException;
 import com.tutr.backend.admin.exception.AdminNotFoundException;
 import com.tutr.backend.admin.exception.AdminValidationException;
 import com.tutr.backend.admin.mapper.AdminMapper;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

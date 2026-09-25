@@ -1,4 +1,4 @@
-package com.tutr.backend.admin.model;
+package com.tutr.backend.admin.model.enums;
 
 public enum AdminNotificationType {
     TUTOR_VERIFICATION_REQUEST,

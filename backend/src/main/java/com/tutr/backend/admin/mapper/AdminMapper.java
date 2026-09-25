@@ -2,7 +2,7 @@ package com.tutr.backend.admin.mapper;
 
 import com.tutr.backend.admin.dto.auth.AdminLoginResponse;
 import com.tutr.backend.admin.dto.auth.AdminResponse;
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import org.springframework.stereotype.Component;
 
 @Component

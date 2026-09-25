@@ -1,5 +1,6 @@
-package com.tutr.backend.admin.model;
+package com.tutr.backend.admin.model.entity;
 
+import com.tutr.backend.admin.model.enums.AdminRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

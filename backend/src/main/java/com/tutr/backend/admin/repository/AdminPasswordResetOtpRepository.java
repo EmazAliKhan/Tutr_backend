@@ -1,6 +1,6 @@
 package com.tutr.backend.admin.repository;
 
-import com.tutr.backend.admin.model.AdminPasswordResetOtp;
+import com.tutr.backend.admin.model.entity.AdminPasswordResetOtp;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,6 +1,6 @@
 package com.tutr.backend.admin.config;
 
-import com.tutr.backend.admin.model.AdminUser;
+import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import com.tutr.backend.security.JwtUtil;
 import jakarta.servlet.FilterChain;

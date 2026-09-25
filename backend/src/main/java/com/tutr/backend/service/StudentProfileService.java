@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import com.tutr.backend.dto.profile.EditStudentProfileRequest;
 import com.tutr.backend.dto.profile.StudentProfileRequest;
 import com.tutr.backend.dto.profile.StudentProfileResponse;
@@ -73,7 +74,7 @@ public class StudentProfileService {
         try {
             String studentName = saved.getFirstName() + " " + saved.getLastName();
             adminNotificationService.notifyAllAdmins(
-                    com.tutr.backend.admin.model.AdminNotificationType.STUDENT_SIGNUP,
+                    AdminNotificationType.STUDENT_SIGNUP,
                     "New Student Registration",
                     studentName + " registered as a new student.",
                     saved.getId(),
