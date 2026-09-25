@@ -44,7 +44,15 @@ public class JwtSecurityConfig {
                                 "/api/auth/**",
                                 "/api/register/**",
                                 "/api/verify/**",
+                                // ────────────────────────────────────────────
+                                // ADMIN AUTH (public — no token required)
+                                // ────────────────────────────────────────────
                                 "/api/admin/auth/login",
+                                "/api/admin/auth/forgot-password",
+                                "/api/admin/auth/resend-otp",
+                                "/api/admin/auth/verify-otp",
+                                "/api/admin/auth/reset-password",
+
                                 "/api/profile-image/upload",
                                 "/api/student-image/upload",
                                 "/api/documents/upload",
