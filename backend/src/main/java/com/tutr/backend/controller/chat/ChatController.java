@@ -25,7 +25,7 @@ public class ChatController {
     private final ChatFacade chatFacade;
     private final FileStorageService fileStorageService;
 
-    // ✅ Get or create SHARED chat room (all parameters are USER IDs)
+    //  Get or create SHARED chat room (all parameters are USER IDs)
     @GetMapping("/shared-room")
     public ResponseEntity<?> getOrCreateSharedChatRoom(
             @RequestParam Long studentId,
@@ -62,7 +62,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Get user chat rooms (USER ID)
+    //  Get user chat rooms (USER ID)
     @GetMapping("/rooms/{userId}")
     public ResponseEntity<?> getUserChatRooms(@PathVariable Long userId) {
         try {
@@ -74,7 +74,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Send message
+    //  Send message
     @PostMapping("/messages/send")
     public ResponseEntity<?> sendMessage(@Valid @RequestBody SendMessageRequest request) {
         try {
@@ -108,7 +108,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Get messages
+    //  Get messages
     @GetMapping("/messages/{roomId}")
     public ResponseEntity<?> getMessages(
             @PathVariable Long roomId,
@@ -146,7 +146,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Mark all as read
+    //  Mark all as read
     @PatchMapping("/rooms/{roomId}/read-all")
     public ResponseEntity<?> markAllAsRead(
             @PathVariable Long roomId,
@@ -160,7 +160,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Get unread count
+    //  Get unread count
     @GetMapping("/unread-count/{userId}")
     public ResponseEntity<?> getUnreadCount(@PathVariable Long userId) {
         try {
@@ -172,7 +172,7 @@ public class ChatController {
         }
     }
 
-    // ✅ Delete message
+    //  Delete message
     @DeleteMapping("/messages/{messageId}")
     public ResponseEntity<?> deleteMessage(
             @PathVariable Long messageId,
@@ -186,6 +186,9 @@ public class ChatController {
         }
     }
 
+    // ============================================================
+// UPLOAD — AUDIO (unchanged, 20MB)
+// ============================================================
     @PostMapping("/upload/audio")
     public ResponseEntity<?> uploadAudio(
             @RequestParam("file") MultipartFile file,
@@ -198,6 +201,13 @@ public class ChatController {
                         .body(Map.of("error", "File is empty"));
             }
 
+            // Audio limit: 20MB
+            long maxAudio = 20L * 1024 * 1024;
+            if (file.getSize() > maxAudio) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Audio must be less than 20MB"));
+            }
+
             String audioUrl = fileStorageService.storeAudioFile(file, userId);
 
             log.info("Audio uploaded: {}", audioUrl);
@@ -207,41 +217,55 @@ public class ChatController {
                     "message", "Upload successful"
             ));
         } catch (Exception e) {
-            log.error("Upload failed: {}", e.getMessage());
+            log.error("Audio upload failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Upload failed: " + e.getMessage()));
         }
     }
 
+    // ============================================================
+// UPLOAD — FILE (video-aware: 500MB video / 20MB others)
+// ============================================================
     @PostMapping("/upload/file")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("userId") Long userId) {
         try {
-            log.info("Uploading file for user: {}, name: {}",
-                    userId, file.getOriginalFilename());
+            log.info("Uploading file for user: {}, name: {}, size: {} bytes, contentType: {}",
+                    userId,
+                    file.getOriginalFilename(),
+                    file.getSize(),
+                    file.getContentType());
 
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "File is empty"));
             }
 
-            // Validate size (max 20MB)
-            if (file.getSize() > 20 * 1024 * 1024) {
+            // Determine limits per type
+            boolean video = isVideo(file);
+            long maxSize = maxSizeFor(video);
+
+            if (file.getSize() > maxSize) {
+                String limitLabel = video ? "500MB" : "20MB";
+                log.warn("File too large: {} bytes (limit {} for {})",
+                        file.getSize(), limitLabel,
+                        video ? "video" : "non-video");
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "File must be less than 20MB"));
+                        .body(Map.of("error", "File must be less than " + limitLabel));
             }
 
             String fileUrl = fileStorageService.storeChatFile(file, userId);
 
-            // Determine file type from extension
+            // Determine extension / fileType
             String originalName = file.getOriginalFilename();
-            String fileType = "file";
+            String fileType = video ? "mp4" : "file";
             if (originalName != null && originalName.contains(".")) {
                 fileType = originalName.substring(originalName.lastIndexOf(".") + 1).toLowerCase();
             }
 
-            log.info("File uploaded: {}", fileUrl);
+            log.info("File uploaded: {} ({} bytes, type={})",
+                    fileUrl, file.getSize(), fileType);
 
             return ResponseEntity.ok(Map.of(
                     "fileUrl", fileUrl,
@@ -251,9 +275,80 @@ public class ChatController {
                     "message", "Upload successful"
             ));
         } catch (Exception e) {
-            log.error("Upload failed: {}", e.getMessage());
+            log.error("File upload failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Upload failed: " + e.getMessage()));
         }
+    }
+
+//    // ============================================================
+//// UPLOAD — VIDEO (dedicated endpoint, 500MB)
+//// ============================================================
+//    @PostMapping("/upload/video")
+//    public ResponseEntity<?> uploadVideo(
+//            @RequestParam("file") MultipartFile file,
+//            @RequestParam("userId") Long userId) {
+//        try {
+//            log.info("Uploading video for user: {}, name: {}, size: {} bytes, contentType: {}",
+//                    userId,
+//                    file.getOriginalFilename(),
+//                    file.getSize(),
+//                    file.getContentType());
+//
+//            if (file.isEmpty()) {
+//                return ResponseEntity.badRequest()
+//                        .body(Map.of("error", "File is empty"));
+//            }
+//
+//            // Strict MIME check for this endpoint
+//            String contentType = file.getContentType();
+//            if (contentType == null || !contentType.startsWith("video/")) {
+//                return ResponseEntity.badRequest()
+//                        .body(Map.of("error", "Only video files are allowed on this endpoint"));
+//            }
+//
+//            long maxVideo = 500L * 1024 * 1024; // 500MB
+//            if (file.getSize() > maxVideo) {
+//                return ResponseEntity.badRequest()
+//                        .body(Map.of("error", "Video must be less than 500MB"));
+//            }
+//
+//            String videoUrl = fileStorageService.storeChatFile(file, userId);
+//
+//            String originalName = file.getOriginalFilename();
+//            String fileType = "mp4";
+//            if (originalName != null && originalName.contains(".")) {
+//                fileType = originalName.substring(originalName.lastIndexOf(".") + 1).toLowerCase();
+//            }
+//
+//            log.info("Video uploaded: {} ({} bytes)", videoUrl, file.getSize());
+//
+//            return ResponseEntity.ok(Map.of(
+//                    "fileUrl", videoUrl,
+//                    "videoUrl", videoUrl,      // both keys, so client can use either
+//                    "fileName", originalName != null ? originalName : "video",
+//                    "fileSize", file.getSize(),
+//                    "fileType", fileType,
+//                    "message", "Upload successful"
+//            ));
+//        } catch (Exception e) {
+//            log.error("Video upload failed: {}", e.getMessage());
+//            return ResponseEntity.badRequest()
+//                    .body(Map.of("error", "Upload failed: " + e.getMessage()));
+//        }
+//    }
+
+    // ============================================================
+// HELPERS
+// ============================================================
+    private boolean isVideo(MultipartFile file) {
+        String ct = file.getContentType();
+        return ct != null && ct.startsWith("video/");
+    }
+
+    private long maxSizeFor(boolean isVideo) {
+        return isVideo
+                ? 500L * 1024 * 1024   // 500 MB for videos
+                : 20L * 1024 * 1024;  // 20 MB for images/files
     }
 }
