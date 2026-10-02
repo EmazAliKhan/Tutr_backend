@@ -2,6 +2,7 @@ package com.tutr.backend.admin.service;
 
 import com.tutr.backend.admin.dto.report.*;
 import com.tutr.backend.admin.repository.AdminReportRepository;
+import com.tutr.backend.admin.repository.AdminUserRepository;
 import com.tutr.backend.model.entity.*;
 import com.tutr.backend.model.enums.*;
 import com.tutr.backend.repository.*;
@@ -30,6 +31,7 @@ public class AdminReportService {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final AdminUserRepository adminUserRepository;
 
     // ============================================================
     // GET REPORTS (list, with filters)
@@ -401,6 +403,23 @@ public class AdminReportService {
                         .reviewedAt(r.getReviewedAt())
                         .reviewedByAdminId(r.getReviewedByAdminId())
                         .adminNotes(r.getAdminNotes());
+
+        if (r.getReviewedByAdminId() != null) {
+            try {
+                adminUserRepository.findById(r.getReviewedByAdminId())
+                        .ifPresent(admin -> {
+                            String fullName = (admin.getFirstName() != null
+                                    ? admin.getFirstName() : "") + " " +
+                                    (admin.getLastName() != null
+                                            ? admin.getLastName() : "");
+                            builder.reviewedByAdminName(fullName.trim().isEmpty()
+                                    ? admin.getEmail() : fullName.trim());
+                        });
+            } catch (Exception e) {
+                log.warn("Failed to resolve admin name for id={}: {}",
+                        r.getReviewedByAdminId(), e.getMessage());
+            }
+        }
 
         // Related connection
         if (r.getConnection() != null) {

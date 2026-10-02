@@ -44,6 +44,7 @@ public class AdminStudentReportDetailResponse {
     private ReportAction actionTaken;
     private LocalDateTime reportedAt;
     private LocalDateTime reviewedAt;
+    private String reviewedByAdminName;
     private Long reviewedByAdminId;
     private String adminNotes;
 }

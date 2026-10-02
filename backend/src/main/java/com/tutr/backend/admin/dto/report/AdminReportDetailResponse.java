@@ -46,5 +46,6 @@ public class AdminReportDetailResponse {
     private LocalDateTime reportedAt;
     private LocalDateTime reviewedAt;
     private Long reviewedByAdminId;
+    private String reviewedByAdminName;
     private String adminNotes;
 }
