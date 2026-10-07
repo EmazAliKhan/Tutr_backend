@@ -49,13 +49,17 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
                 final String email = jwtUtil.extractEmail(token);
                 final String role = jwtUtil.extractRole(token);
 
-                if ("ADMIN".equals(role) || "SUPER_ADMIN".equals(role)) {
+                String normalizedRole = role != null
+                        ? role.toUpperCase().replace('-', '_')
+                        : "";
+
+                if ("ADMIN".equals(normalizedRole) || "SUPER_ADMIN".equals(normalizedRole)) {
                     AdminUser admin = adminUserRepository.findByEmail(email).orElse(null);
 
                     if (admin != null &&
                             SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
 
                         UsernamePasswordAuthenticationToken authToken =
                                 new UsernamePasswordAuthenticationToken(email, null, authorities);

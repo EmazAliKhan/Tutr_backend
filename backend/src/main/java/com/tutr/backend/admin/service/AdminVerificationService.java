@@ -55,9 +55,13 @@ public class AdminVerificationService {
     // DECIDE (approve / reject / ban)
     // ============================================================
     @Transactional
-    public void decide(Long documentId, VerificationDecisionRequest req) {
-        log.debug("Admin deciding on documents {} — status={}, ban={}",
-                documentId, req.getStatus(), req.isPermanentBan());
+    public void decide(Long documentId,
+                       VerificationDecisionRequest req,
+                       String adminEmail,
+                       String adminName) {
+
+        log.debug("Admin {} deciding on documents {} — status={}, ban={}",
+                adminEmail, documentId, req.getStatus(), req.isPermanentBan());
 
         if (req.getStatus() == VerificationStatus.REJECTED
                 && (req.getRejectionReason() == null
@@ -70,11 +74,13 @@ public class AdminVerificationService {
                 documentId,
                 req.getStatus(),
                 req.getRejectionReason(),
-                req.isPermanentBan()
+                req.isPermanentBan(),
+                adminEmail,
+                adminName
         );
 
-        log.info("Verification decision saved: documentId={}, status={}, ban={}",
-                documentId, req.getStatus(), req.isPermanentBan());
+        log.info("Verification decision saved: documentId={}, status={}, ban={}, by={}",
+                documentId, req.getStatus(), req.isPermanentBan(), adminEmail);
     }
 
     // ============================================================
@@ -136,6 +142,8 @@ public class AdminVerificationService {
                 .certificateImageUrl(doc.getCertificateImageUrl())
                 .rejectionReason(doc.getRejectionReason())
                 .resubmissionCount(doc.getResubmissionCount())
+                .verifiedByEmail(doc.getVerifiedByEmail())
+                .verifiedByName(doc.getVerifiedByName())
                 .build();
     }
 
@@ -156,7 +164,9 @@ public class AdminVerificationService {
                         .uploadedAt(doc.getUploadedAt())
                         .verifiedAt(doc.getVerifiedAt())
                         .rejectionReason(doc.getRejectionReason())
-                        .resubmissionCount(doc.getResubmissionCount());
+                        .resubmissionCount(doc.getResubmissionCount())
+                        .verifiedByEmail(doc.getVerifiedByEmail())
+                        .verifiedByName(doc.getVerifiedByName());
 
 
         if (profile != null) {

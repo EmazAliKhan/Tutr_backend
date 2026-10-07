@@ -42,6 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = authHeader.substring(7);
 
+        if (request.getRequestURI().startsWith("/api/admin/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             if (jwtUtil.isTokenValid(token)) {
                 final String email = jwtUtil.extractEmail(token);
@@ -111,7 +116,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
 
                         UsernamePasswordAuthenticationToken authToken =
-                                new UsernamePasswordAuthenticationToken(user, null, authorities);
+                                new UsernamePasswordAuthenticationToken(user.getEmail(), null, authorities);
 
                         authToken.setDetails(
                                 new WebAuthenticationDetailsSource().buildDetails(request)

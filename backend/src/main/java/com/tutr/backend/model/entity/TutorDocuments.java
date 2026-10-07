@@ -30,9 +30,24 @@ public class TutorDocuments {
     @Builder.Default
     private int resubmissionCount = 0;
 
+    //  Tutor documents always start PENDING — never APPROVED
     @Enumerated(EnumType.STRING)
-    private VerificationStatus verificationStatus = VerificationStatus.APPROVED;
+    @Builder.Default
+    private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
+    @Builder.Default
     private LocalDateTime uploadedAt = LocalDateTime.now();
+
     private LocalDateTime verifiedAt;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
+    @Column(name = "verified_by_email")
+    private String verifiedByEmail;
+
+    @Column(name = "verified_by_name")
+    private String verifiedByName;
 }

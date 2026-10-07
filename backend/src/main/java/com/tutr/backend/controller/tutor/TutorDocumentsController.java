@@ -57,16 +57,16 @@ public class TutorDocumentsController {
         }
     }
 
-    @PutMapping("/verify/{documentId}")
-    public ResponseEntity<?> verifyDocuments(
-            @PathVariable Long documentId,
-            @RequestParam VerificationStatus status) {
-        try {
-            TutorDocuments documents = documentsService.verifyDocuments(
-                    documentId, status, null, false);
-            return ResponseEntity.ok(documents);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-        }
-    }
+//    @PutMapping("/verify/{documentId}")
+//    public ResponseEntity<?> verifyDocuments(
+//            @PathVariable Long documentId,
+//            @RequestParam VerificationStatus status) {
+//        try {
+//            TutorDocuments documents = documentsService.verifyDocuments(
+//                    documentId, status, null, false);
+//            return ResponseEntity.ok(documents);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+//        }
+//    }
 }

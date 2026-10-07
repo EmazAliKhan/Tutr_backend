@@ -1,5 +1,6 @@
 package com.tutr.backend.service;
 
+import com.tutr.backend.admin.exception.ConflictException;
 import com.tutr.backend.admin.model.enums.AdminNotificationType;
 import com.tutr.backend.dto.profile.TutorDocumentsRequest;
 import com.tutr.backend.model.entity.TutorDocuments;
@@ -17,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+
+import static io.micrometer.common.util.StringUtils.truncate;
 
 @Slf4j
 @Service
@@ -132,15 +135,27 @@ public class TutorDocumentsService {
     public TutorDocuments verifyDocuments(Long documentId,
                                           VerificationStatus status,
                                           String rejectionReason,
-                                          boolean permanentBan) {
+                                          boolean permanentBan,
+                                          String adminEmail,
+                                          String adminName){
         log.debug("Verifying documentsId={} with status={}, ban={}",
                 documentId, status, permanentBan);
 
         TutorDocuments documents = documentsRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Documents not found"));
 
+        //  Guard: only PENDING can be decided
+        if (documents.getVerificationStatus() != VerificationStatus.PENDING) {
+            throw new ConflictException(
+                    "This application has already been "
+                            + documents.getVerificationStatus().name().toLowerCase()
+                            + ". It cannot be changed again.");
+        }
+
         documents.setVerificationStatus(status);
         documents.setVerifiedAt(LocalDateTime.now());
+        documents.setVerifiedByEmail(truncate(adminEmail, 255));
+        documents.setVerifiedByName(truncate(adminName, 255));
 
         User user = documents.getUser();
 
@@ -227,6 +242,11 @@ public class TutorDocumentsService {
         } catch (Exception e) {
             return "Tutor";
         }
+    }
+
+    private String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     // ============================================================

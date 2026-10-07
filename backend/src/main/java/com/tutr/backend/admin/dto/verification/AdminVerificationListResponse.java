@@ -33,4 +33,8 @@ public class AdminVerificationListResponse {
     private String rejectionReason;
     private int resubmissionCount;
     private String accountStatus;
+
+    private String verifiedByEmail;
+    private String verifiedByName;
+
 }

@@ -40,4 +40,7 @@ public class AdminVerificationDetailResponse {
     private String rejectionReason;
     private int resubmissionCount;
 
+    private String verifiedByEmail;
+    private String verifiedByName;
+
 }
