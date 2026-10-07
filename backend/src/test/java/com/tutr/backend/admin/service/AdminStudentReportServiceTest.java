@@ -2,13 +2,12 @@ package com.tutr.backend.admin.service;
 
 import com.tutr.backend.admin.dto.report.*;
 import com.tutr.backend.admin.exception.ConflictException;
-import com.tutr.backend.admin.repository.AdminReportRepository;
+import com.tutr.backend.admin.repository.AdminStudentReportRepository;
 import com.tutr.backend.admin.repository.AdminUserRepository;
 import com.tutr.backend.model.entity.*;
 import com.tutr.backend.model.enums.*;
-import com.tutr.backend.repository.*;
+import com.tutr.backend.repository.StudentWarningRepository;
 import com.tutr.backend.service.EmailService;
-import com.tutr.backend.service.NotificationService;
 import com.tutr.backend.service.PushNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,22 +24,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-// ===================================== 9 TESTS ============================
+// ===================================== 8 TESTS ============================
 @ExtendWith(MockitoExtension.class)
-class AdminReportServiceTest {
+class AdminStudentReportServiceTest {
 
-    @Mock private AdminReportRepository reportRepository;
-    @Mock private TutorWarningRepository warningRepository;
-    @Mock private AdminTutorService adminTutorService;
+    @Mock private AdminStudentReportRepository reportRepository;
+    @Mock private StudentWarningRepository warningRepository;
+    @Mock private AdminStudentService adminStudentService;
     @Mock private PushNotificationService pushNotificationService;
-    @Mock private NotificationService notificationService;
-    @Mock private UserRepository userRepository;
     @Mock private EmailService emailService;
     @Mock private AdminUserRepository adminUserRepository;
 
-    @InjectMocks private AdminReportService adminReportService;
+    @InjectMocks private AdminStudentReportService adminStudentReportService;
 
-    private TutorReport report;
+    private StudentReport report;
     private TutorProfile tutor;
     private StudentProfile student;
 
@@ -49,41 +46,41 @@ class AdminReportServiceTest {
         tutor = TutorProfile.builder()
                 .id(2L).firstName("Ahmed").lastName("Tutor")
                 .profilePictureUrl("/t.jpg")
-                .user(User.builder().id(20L).email("tutor@tutr.com")
-                        .accountStatus(AccountStatus.ACTIVE).build())
+                .user(User.builder().id(20L).email("tutor@tutr.com").build())
                 .build();
 
         student = StudentProfile.builder()
                 .id(1L).firstName("Ali").lastName("Student")
                 .profilePictureUrl("/s.jpg")
-                .user(User.builder().id(10L).email("s@tutr.com").build())
+                .user(User.builder().id(10L).email("s@tutr.com")
+                        .accountStatus(AccountStatus.ACTIVE).build())
                 .build();
 
-        report = TutorReport.builder()
+        report = StudentReport.builder()
                 .id(500L)
                 .student(student).tutor(tutor)
-                .reason(ReportReason.HARASSMENT)
-                .description("Something bad happened during the class.")
+                .reason(StudentReportReason.OTHER)
+                .description("Student did not attend.")
                 .status(ReportStatus.PENDING)
                 .reportedAt(LocalDateTime.now())
                 .build();
+
     }
 
     // ============================================================
-    // 1. getReports — returns mapped list with truncated description
+    // 1. getReports — returns mapped list
     // ============================================================
     @Test
-    void getReports_truncatesLongDescription() {
-        report.setDescription("x".repeat(200));
-        when(reportRepository.findAdminReports(any(), any(), any(), any()))
+    void getReports_returnsMappedList() {
+        when(reportRepository.findAdminStudentReports(any(), any(), any(), any()))
                 .thenReturn(List.of(report));
 
-        List<AdminReportListResponse> resp =
-                adminReportService.getReports(new AdminReportFilterRequest());
+        List<AdminStudentReportListResponse> resp =
+                adminStudentReportService.getReports(new AdminReportFilterRequest());
 
         assertThat(resp).hasSize(1);
-        assertThat(resp.get(0).getDescription()).hasSize(103); // 100 + "..."
-        assertThat(resp.get(0).getDescription()).endsWith("...");
+        assertThat(resp.get(0).getStudentName()).isEqualTo("Ali Student");
+        assertThat(resp.get(0).getTutorName()).isEqualTo("Ahmed Tutor");
     }
 
     // ============================================================
@@ -92,15 +89,15 @@ class AdminReportServiceTest {
     @Test
     void getReportDetail_success() {
         when(reportRepository.findById(500L)).thenReturn(Optional.of(report));
-        when(warningRepository.countByTutorId(2L)).thenReturn(2L);
-        when(warningRepository.findByTutorId(2L)).thenReturn(List.of());
+        when(warningRepository.countByStudentId(1L)).thenReturn(0L);
+        when(warningRepository.findByStudentId(1L)).thenReturn(List.of());
 
-        AdminReportDetailResponse resp = adminReportService.getReportDetail(500L);
+        AdminStudentReportDetailResponse resp =
+                adminStudentReportService.getReportDetail(500L);
 
         assertThat(resp.getId()).isEqualTo(500L);
-        assertThat(resp.getTutorName()).isEqualTo("Ahmed Tutor");
         assertThat(resp.getStudentName()).isEqualTo("Ali Student");
-        assertThat(resp.getTutorWarningCount()).isEqualTo(2);
+        assertThat(resp.getTutorEmail()).isEqualTo("tutor@tutr.com");
     }
 
     // ============================================================
@@ -110,7 +107,7 @@ class AdminReportServiceTest {
     void getReportDetail_notFound_throws() {
         when(reportRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> adminReportService.getReportDetail(99L))
+        assertThatThrownBy(() -> adminStudentReportService.getReportDetail(99L))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Report not found");
     }
@@ -122,27 +119,25 @@ class AdminReportServiceTest {
     void markUnderReview_success() {
         when(reportRepository.findById(500L)).thenReturn(Optional.of(report));
 
-        adminReportService.markUnderReview(500L, 1L);
+        adminStudentReportService.markUnderReview(500L, 1L);
 
         assertThat(report.getStatus()).isEqualTo(ReportStatus.UNDER_REVIEW);
-        assertThat(report.getReviewedByAdminId()).isEqualTo(1L);
         verify(reportRepository).save(report);
         verify(pushNotificationService).sendToUser(
-                eq(10L), anyString(), anyString(), anyMap());
+                eq(20L), anyString(), anyString(), anyMap());
     }
 
     // ============================================================
-    // 5. markUnderReview — non-PENDING throws ConflictException
+    // 5. markUnderReview — not PENDING throws ConflictException
     // ============================================================
     @Test
     void markUnderReview_notPending_throws() {
         report.setStatus(ReportStatus.RESOLVED);
         when(reportRepository.findById(500L)).thenReturn(Optional.of(report));
 
-        assertThatThrownBy(() -> adminReportService.markUnderReview(500L, 1L))
+        assertThatThrownBy(() ->
+                adminStudentReportService.markUnderReview(500L, 1L))
                 .isInstanceOf(ConflictException.class);
-
-        verify(reportRepository, never()).save(any());
     }
 
     // ============================================================
@@ -157,17 +152,16 @@ class AdminReportServiceTest {
         req.setAction(ReportAction.WARNING_ISSUED);
         req.setAdminNotes("First warning");
 
-        adminReportService.resolveReport(500L, req, 1L);
+        adminStudentReportService.resolveReport(500L, req, 1L);
 
         assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
-        assertThat(report.getActionTaken()).isEqualTo(ReportAction.WARNING_ISSUED);
-        verify(warningRepository).save(any(TutorWarning.class));
-        verify(emailService).sendTutorWarningEmail(
-                eq("tutor@tutr.com"), anyString(), any(), eq("First warning"));
+        verify(warningRepository).save(any(StudentWarning.class));
+        verify(emailService).sendStudentWarningEmail(
+                eq("s@tutr.com"), anyString(), any(), eq("First warning"));
     }
 
     // ============================================================
-    // 7. resolveReport — SUSPENDED delegates to AdminTutorService
+    // 7. resolveReport — SUSPENDED delegates to AdminStudentService
     // ============================================================
     @Test
     void resolveReport_suspend_delegates() {
@@ -176,35 +170,16 @@ class AdminReportServiceTest {
 
         ReportActionRequest req = new ReportActionRequest();
         req.setAction(ReportAction.SUSPENDED);
-        req.setAdminNotes("Suspended due to severity");
+        req.setAdminNotes("Suspended");
 
-        adminReportService.resolveReport(500L, req, 1L);
+        adminStudentReportService.resolveReport(500L, req, 1L);
 
-        verify(adminTutorService).suspendTutor(2L);
+        verify(adminStudentService).suspendStudent(1L);
         assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
     }
 
     // ============================================================
-    // 8. resolveReport — DISMISSED sets DISMISSED status
-    // ============================================================
-    @Test
-    void resolveReport_dismissed_setsDismissedStatus() {
-        report.setStatus(ReportStatus.UNDER_REVIEW);
-        when(reportRepository.findById(500L)).thenReturn(Optional.of(report));
-
-        ReportActionRequest req = new ReportActionRequest();
-        req.setAction(ReportAction.DISMISSED);
-        req.setAdminNotes("No evidence");
-
-        adminReportService.resolveReport(500L, req, 1L);
-
-        assertThat(report.getStatus()).isEqualTo(ReportStatus.DISMISSED);
-        verify(warningRepository, never()).save(any());
-        verify(adminTutorService, never()).suspendTutor(anyLong());
-    }
-
-    // ============================================================
-    // 9. resolveReport — not UNDER_REVIEW throws ConflictException
+    // 8. resolveReport — not UNDER_REVIEW throws ConflictException
     // ============================================================
     @Test
     void resolveReport_notUnderReview_throws() {
@@ -214,7 +189,8 @@ class AdminReportServiceTest {
         ReportActionRequest req = new ReportActionRequest();
         req.setAction(ReportAction.WARNING_ISSUED);
 
-        assertThatThrownBy(() -> adminReportService.resolveReport(500L, req, 1L))
+        assertThatThrownBy(() ->
+                adminStudentReportService.resolveReport(500L, req, 1L))
                 .isInstanceOf(ConflictException.class);
 
         verify(reportRepository, never()).save(any());
