@@ -8,6 +8,7 @@ import com.tutr.backend.model.enums.*;
 import com.tutr.backend.repository.*;
 import com.tutr.backend.service.EmailService;
 import com.tutr.backend.service.PushNotificationService;
+import com.tutr.backend.admin.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,7 +69,10 @@ public class AdminStudentReportService {
                 .orElseThrow(() -> new RuntimeException("Report not found"));
 
         if (report.getStatus() != ReportStatus.PENDING) {
-            throw new RuntimeException("Report is not in PENDING state");
+            throw new ConflictException(
+                    "This report has already been "
+                            + report.getStatus().name().toLowerCase().replace('_', ' ')
+                            + " by another admin. It cannot be changed again.");
         }
 
         report.setStatus(ReportStatus.UNDER_REVIEW);
@@ -110,7 +114,10 @@ public class AdminStudentReportService {
                 .orElseThrow(() -> new RuntimeException("Report not found"));
 
         if (report.getStatus() != ReportStatus.UNDER_REVIEW) {
-            throw new RuntimeException("Report must be UNDER_REVIEW before resolving");
+            throw new ConflictException(
+                    "This report has already been "
+                            + report.getStatus().name().toLowerCase().replace('_', ' ')
+                            + " by another admin. It cannot be changed again.");
         }
 
         ReportAction action = req.getAction();
