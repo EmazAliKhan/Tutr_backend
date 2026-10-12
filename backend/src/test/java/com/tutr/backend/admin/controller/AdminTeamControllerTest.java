@@ -6,14 +6,19 @@ import com.tutr.backend.admin.dto.auth.*;
 import com.tutr.backend.admin.model.entity.AdminUser;
 import com.tutr.backend.admin.service.AdminAuthService;
 import com.tutr.backend.admin.service.AdminTeamService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -21,13 +26,14 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 // ===================================== 6 TESTS ============================
 @WebMvcTest(AdminTeamController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(TestSecurityConfig.class)
-@WithMockUser(username = "super@tutr.com", roles = "SUPER_ADMIN")
 class AdminTeamControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -36,15 +42,25 @@ class AdminTeamControllerTest {
     @MockBean private AdminTeamService adminTeamService;
     @MockBean private AdminAuthService adminAuthService;
 
+    private Authentication auth;
+
     @BeforeEach
     void setup() {
+        auth = new UsernamePasswordAuthenticationToken(
+                "super@tutr.com", null,
+                List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
         when(adminAuthService.getCurrentAdmin("super@tutr.com"))
                 .thenReturn(AdminUser.builder().id(1L).build());
     }
 
-    // ============================================================
-    // 1. GET / — returns all admins
-    // ============================================================
+    @AfterEach
+    void cleanup() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void getAllAdmins_returnsList() throws Exception {
         when(adminTeamService.getAllAdmins())
@@ -55,9 +71,6 @@ class AdminTeamControllerTest {
                 .andExpect(jsonPath("$[0].email").value("a@tutr.com"));
     }
 
-    // ============================================================
-    // 2. GET /{id} — returns admin
-    // ============================================================
     @Test
     void getAdmin_returns200() throws Exception {
         when(adminTeamService.getAdminById(5L))
@@ -68,9 +81,6 @@ class AdminTeamControllerTest {
                 .andExpect(jsonPath("$.email").value("a@tutr.com"));
     }
 
-    // ============================================================
-    // 3. GET /{id} — not found → 404
-    // ============================================================
     @Test
     void getAdmin_notFound_returns404() throws Exception {
         when(adminTeamService.getAdminById(99L))
@@ -80,9 +90,6 @@ class AdminTeamControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ============================================================
-    // 4. POST / — creates admin
-    // ============================================================
     @Test
     void createAdmin_returns200() throws Exception {
         CreateAdminRequest req = new CreateAdminRequest();
@@ -100,9 +107,6 @@ class AdminTeamControllerTest {
                 .andExpect(jsonPath("$.email").value("new@tutr.com"));
     }
 
-    // ============================================================
-    // 5. PUT /{id}/role — success
-    // ============================================================
     @Test
     void changeRole_returns200() throws Exception {
         ChangeRoleRequest req = new ChangeRoleRequest();
@@ -117,15 +121,13 @@ class AdminTeamControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // ============================================================
-    // 6. PUT /{id}/deactivate — success
-    // ============================================================
     @Test
     void deactivate_returns200() throws Exception {
         when(adminTeamService.deactivateAdmin(5L, 1L))
                 .thenReturn(AdminResponse.builder().build());
 
-        mockMvc.perform(put("/api/admin/team/5/deactivate"))
+        mockMvc.perform(put("/api/admin/team/5/deactivate")
+                        .with(authentication(auth)))                     // ✅ THE FIX
                 .andExpect(status().isOk());
 
         verify(adminTeamService).deactivateAdmin(5L, 1L);

@@ -43,13 +43,11 @@ class AdminStudentReportControllerTest {
 
     @BeforeEach
     void setup() {
-        // ✅ Seed the SecurityContext manually
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
                         "admin@tutr.com", null,
                         List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
 
-        // ✅ Stub the repo lookup the controller does
         when(adminUserRepository.findByEmail("admin@tutr.com"))
                 .thenReturn(Optional.of(AdminUser.builder().id(1L).build()));
     }

@@ -17,6 +17,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -42,11 +43,13 @@ class AdminReportControllerTest {
 
     @BeforeEach
     void setup() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "admin@tutr.com", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
         when(adminUserRepository.findByEmail("admin@tutr.com"))
                 .thenReturn(Optional.of(AdminUser.builder().id(1L).build()));
-
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("admin@tutr.com", null));
     }
 
     @AfterEach
@@ -54,9 +57,6 @@ class AdminReportControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    // ============================================================
-    // 1. POST /filter — returns list
-    // ============================================================
     @Test
     void getReports_returnsList() throws Exception {
         when(adminReportService.getReports(any()))
@@ -70,9 +70,6 @@ class AdminReportControllerTest {
                 .andExpect(jsonPath("$[0].tutorName").value("Ahmed Tutor"));
     }
 
-    // ============================================================
-    // 2. GET /stats — returns stats
-    // ============================================================
     @Test
     void getStats_returnsStats() throws Exception {
         when(adminReportService.getStats())
@@ -86,9 +83,6 @@ class AdminReportControllerTest {
                 .andExpect(jsonPath("$.totalWarnings").value(5));
     }
 
-    // ============================================================
-    // 3. GET /{id} — returns detail
-    // ============================================================
     @Test
     void getReportDetail_returnsDetail() throws Exception {
         when(adminReportService.getReportDetail(500L))
@@ -100,9 +94,6 @@ class AdminReportControllerTest {
                 .andExpect(jsonPath("$.id").value(500));
     }
 
-    // ============================================================
-    // 4. PATCH /{id}/mark-under-review — returns 204
-    // ============================================================
     @Test
     void markUnderReview_returns204() throws Exception {
         mockMvc.perform(patch("/api/admin/reports/500/mark-under-review"))
@@ -111,14 +102,11 @@ class AdminReportControllerTest {
         verify(adminReportService).markUnderReview(500L, 1L);
     }
 
-    // ============================================================
-    // 5. POST /{id}/resolve — returns 204
-    // ============================================================
     @Test
     void resolveReport_returns204() throws Exception {
         ReportActionRequest req = new ReportActionRequest();
         req.setAction(ReportAction.WARNING_ISSUED);
-        req.setAdminNotes("Issued a formal warning.");
+        req.setAdminNotes("Issued a formal warning.");   // ≥10 chars
 
         mockMvc.perform(post("/api/admin/reports/500/resolve")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,23 +32,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminNotificationControllerTest {
 
     @Autowired private MockMvc mockMvc;
-    @Autowired private AdminUserRepository adminUserRepository;      // ← autowired (mocked by config)
+    @Autowired private AdminUserRepository adminUserRepository;
 
     @MockBean private AdminNotificationService adminNotificationService;
 
-    private AdminUser admin;
-
     @BeforeEach
     void setup() {
-        admin = AdminUser.builder()
-                .id(1L).email("admin@tutr.com")
-                .isActive(true).build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "admin@tutr.com", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
 
         when(adminUserRepository.findByEmail("admin@tutr.com"))
-                .thenReturn(Optional.of(admin));
-
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("admin@tutr.com", null));
+                .thenReturn(Optional.of(AdminUser.builder().id(1L).build()));
     }
 
     @AfterEach
@@ -55,9 +52,6 @@ class AdminNotificationControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    // ============================================================
-    // 1. GET / — returns list
-    // ============================================================
     @Test
     void getNotifications_returnsList() throws Exception {
         when(adminNotificationService.getNotifications(1L))
@@ -69,9 +63,6 @@ class AdminNotificationControllerTest {
                 .andExpect(jsonPath("$[0].title").value("New report"));
     }
 
-    // ============================================================
-    // 2. GET /unread-count — returns count
-    // ============================================================
     @Test
     void getUnreadCount_returnsCount() throws Exception {
         when(adminNotificationService.getUnreadCount(1L)).thenReturn(5L);
@@ -81,9 +72,6 @@ class AdminNotificationControllerTest {
                 .andExpect(jsonPath("$.unreadCount").value(5));
     }
 
-    // ============================================================
-    // 3. PATCH /{id}/read — returns 204
-    // ============================================================
     @Test
     void markAsRead_returns204() throws Exception {
         mockMvc.perform(patch("/api/admin/notifications/100/read"))
@@ -92,9 +80,6 @@ class AdminNotificationControllerTest {
         verify(adminNotificationService).markAsRead(100L, 1L);
     }
 
-    // ============================================================
-    // 4. PATCH /read-all — returns 204
-    // ============================================================
     @Test
     void markAllAsRead_returns204() throws Exception {
         mockMvc.perform(patch("/api/admin/notifications/read-all"))
@@ -103,9 +88,6 @@ class AdminNotificationControllerTest {
         verify(adminNotificationService).markAllAsRead(1L);
     }
 
-    // ============================================================
-    // 5. DELETE /{id} — returns 204
-    // ============================================================
     @Test
     void delete_returns204() throws Exception {
         mockMvc.perform(delete("/api/admin/notifications/100"))
