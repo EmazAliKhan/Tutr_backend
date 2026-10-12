@@ -3,13 +3,18 @@ package com.tutr.backend.admin.controller;
 import com.tutr.backend.admin.config.TestSecurityConfig;
 import com.tutr.backend.admin.dto.tutor.*;
 import com.tutr.backend.admin.service.AdminTutorService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;   // ← ADD
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -21,13 +26,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 // ===================================== 4 TESTS ============================
 @WebMvcTest(AdminTutorController.class)
+@AutoConfigureMockMvc(addFilters = false)                      // ✅ ADD THIS
 @Import(TestSecurityConfig.class)
-@WithMockUser(username = "admin@tutr.com", roles = "ADMIN")
 class AdminTutorControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
     @MockBean private AdminTutorService adminTutorService;
+
+    // ✅ Seed SecurityContextHolder manually
+    @BeforeEach
+    void setup() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "admin@tutr.com", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+    }
+
+    @AfterEach
+    void cleanup() {
+        SecurityContextHolder.clearContext();
+    }
 
     // ============================================================
     // 1. POST /filter — returns list
