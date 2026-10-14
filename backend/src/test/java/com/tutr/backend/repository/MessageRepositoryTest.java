@@ -55,7 +55,7 @@ class MessageRepositoryTest {
         em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Hello").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now())
+                .sentAt(LocalDateTime.now().minusSeconds(1))   // ← earlier
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
@@ -63,7 +63,7 @@ class MessageRepositoryTest {
         em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Second message").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now())
+                .sentAt(LocalDateTime.now())                    // ← later
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
@@ -79,7 +79,7 @@ class MessageRepositoryTest {
         assertThat(result).hasSize(2);
     }
 
-    // 2. findFirstByChatRoom...
+    // 2. findFirstByChatRoom... returns latest
     @Test
     void findFirstByChatRoom_returnsLatest() {
         Message latest = repository
