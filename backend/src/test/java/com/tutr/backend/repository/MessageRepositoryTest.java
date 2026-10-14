@@ -18,7 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// ===================================== 6 TESTS ============================
+// ===================================== 7 TESTS ============================
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -55,7 +55,7 @@ class MessageRepositoryTest {
         em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Hello").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now().minusSeconds(1))   // ← earlier
+                .sentAt(LocalDateTime.now().minusSeconds(1))
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
@@ -63,7 +63,7 @@ class MessageRepositoryTest {
         em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Second message").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now())                    // ← later
+                .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
@@ -79,11 +79,11 @@ class MessageRepositoryTest {
         assertThat(result).hasSize(2);
     }
 
-    // 2. findFirstByChatRoom... returns latest
+    // 2. findFirstByChatRoomOrderBySentAtDescForUserNative — latest for user
     @Test
-    void findFirstByChatRoom_returnsLatest() {
-        Message latest = repository
-                .findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(chatRoom);
+    void findFirstByChatRoomForUser_returnsLatest() {
+        Message latest = repository.findFirstByChatRoomOrderBySentAtDescForUserNative(
+                chatRoom.getId(), recipient.getId());
         assertThat(latest).isNotNull();
         assertThat(latest.getContent()).isEqualTo("Second message");
     }
@@ -123,5 +123,29 @@ class MessageRepositoryTest {
 
         Message updated = repository.findById(m.getId()).orElseThrow();
         assertThat(updated.isDeletedForSender()).isTrue();
+    }
+
+    // 7. Recipient still sees sender-deleted messages (user-aware query)
+    @Test
+    void findFirstForUser_recipientStillSeesSenderDeletedMessage() {
+        Message hello = repository.findAll().stream()
+                .filter(m -> m.getContent().equals("Hello"))
+                .findFirst()
+                .orElseThrow();
+
+        repository.deleteForSender(hello.getId());
+        em.flush();
+        em.clear();
+
+        // Sender: first message now hidden from them
+        Message forSender = repository.findFirstByChatRoomOrderBySentAtDescForUserNative(
+                chatRoom.getId(), sender.getId());
+        assertThat(forSender).isNotNull();
+        assertThat(forSender.getContent()).isEqualTo("Second message");
+
+        // Recipient: still sees both messages
+        List<Message> forRecipient = repository.findMessagesForUser(
+                chatRoom, recipient.getId(), PageRequest.of(0, 10));
+        assertThat(forRecipient).hasSize(2);
     }
 }

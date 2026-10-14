@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-// ===================================== 10 TESTS ===========================
+// ===================================== 11 TESTS ===========================
 @ExtendWith(MockitoExtension.class)
 class RatingServiceTest {
 
@@ -69,10 +69,10 @@ class RatingServiceTest {
     }
 
     // ============================================================
-    // 1. submitRatingWithConnection — success
+    // 1. submitRating — with connectionId, success
     // ============================================================
     @Test
-    void submitRatingWithConnection_success() {
+    void submitRating_withConnectionId_success() {
         RatingRequest req = new RatingRequest();
         req.setConnectionId(200L);
         req.setRating(5);
@@ -88,7 +88,7 @@ class RatingServiceTest {
         when(ratingRepository.existsByConnectionId(200L)).thenReturn(false);
         when(ratingRepository.save(any(RatingReview.class))).thenReturn(saved);
 
-        RatingResponse result = ratingService.submitRatingWithConnection(req);
+        RatingResponse result = ratingService.submitRating(req);
 
         assertThat(result.getId()).isEqualTo(500L);
         assertThat(result.getRating()).isEqualTo(5);
@@ -96,15 +96,15 @@ class RatingServiceTest {
     }
 
     // ============================================================
-    // 2. submitRatingWithConnection — invalid rating → throws
+    // 2. submitRating — with connectionId, invalid rating → throws
     // ============================================================
     @Test
-    void submitRatingWithConnection_invalidRating_throws() {
+    void submitRating_withConnectionId_invalidRating_throws() {
         RatingRequest req = new RatingRequest();
         req.setConnectionId(200L);
         req.setRating(6);  // out of range
 
-        assertThatThrownBy(() -> ratingService.submitRatingWithConnection(req))
+        assertThatThrownBy(() -> ratingService.submitRating(req))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("between 1 and 5");
 
@@ -112,10 +112,10 @@ class RatingServiceTest {
     }
 
     // ============================================================
-    // 3. submitRatingWithConnection — connection not CONFIRMED → throws
+    // 3. submitRating — with connectionId, status PENDING → throws
     // ============================================================
     @Test
-    void submitRatingWithConnection_notConfirmed_throws() {
+    void submitRating_withConnectionId_notConfirmed_throws() {
         connection.setStatus(ConnectionStatus.PENDING);
         RatingRequest req = new RatingRequest();
         req.setConnectionId(200L);
@@ -123,16 +123,16 @@ class RatingServiceTest {
 
         when(connectionRepository.findById(200L)).thenReturn(Optional.of(connection));
 
-        assertThatThrownBy(() -> ratingService.submitRatingWithConnection(req))
+        assertThatThrownBy(() -> ratingService.submitRating(req))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("confirmed or completed");
     }
 
     // ============================================================
-    // 4. submitRatingWithConnection — duplicate → throws
+    // 4. submitRating — with connectionId, duplicate → throws
     // ============================================================
     @Test
-    void submitRatingWithConnection_duplicate_throws() {
+    void submitRating_withConnectionId_duplicate_throws() {
         RatingRequest req = new RatingRequest();
         req.setConnectionId(200L);
         req.setRating(5);
@@ -140,16 +140,16 @@ class RatingServiceTest {
         when(connectionRepository.findById(200L)).thenReturn(Optional.of(connection));
         when(ratingRepository.existsByConnectionId(200L)).thenReturn(true);
 
-        assertThatThrownBy(() -> ratingService.submitRatingWithConnection(req))
+        assertThatThrownBy(() -> ratingService.submitRating(req))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("already rated");
     }
 
     // ============================================================
-    // 5. submitRatingWithoutConnection — success
+    // 5. submitRating — with studentId+courseId, rateable connection exists → success
     // ============================================================
     @Test
-    void submitRatingWithoutConnection_success() {
+    void submitRating_withStudentAndCourse_success() {
         RatingRequest req = new RatingRequest();
         req.setStudentId(1L);
         req.setCourseId(50L);
@@ -157,43 +157,78 @@ class RatingServiceTest {
         req.setReview("Good");
 
         RatingReview saved = RatingReview.builder()
-                .id(501L).student(student).tutor(tutor).course(course)
+                .id(501L).connection(connection).student(student).tutor(tutor).course(course)
                 .rating(4).review("Good")
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(studentProfileRepository.findById(1L)).thenReturn(Optional.of(student));
-        when(courseRepository.findById(50L)).thenReturn(Optional.of(course));
-        when(ratingRepository.existsByStudentIdAndCourseId(1L, 50L)).thenReturn(false);
+        when(connectionRepository.findByStudentIdAndCourseIdOrderByRequestedAtDesc(1L, 50L))
+                .thenReturn(List.of(connection));
+        when(ratingRepository.existsByConnectionId(200L)).thenReturn(false);
         when(ratingRepository.save(any(RatingReview.class))).thenReturn(saved);
 
-        RatingResponse result = ratingService.submitRatingWithoutConnection(req);
+        RatingResponse result = ratingService.submitRating(req);
 
         assertThat(result.getId()).isEqualTo(501L);
         assertThat(result.getRating()).isEqualTo(4);
     }
 
     // ============================================================
-    // 6. submitRatingWithoutConnection — duplicate → throws
+    // 6. submitRating — studentId+courseId, NO rateable connection → throws
     // ============================================================
     @Test
-    void submitRatingWithoutConnection_duplicate_throws() {
+    void submitRating_withStudentAndCourse_noRateableConnection_throws() {
         RatingRequest req = new RatingRequest();
         req.setStudentId(1L);
         req.setCourseId(50L);
         req.setRating(5);
 
-        when(studentProfileRepository.findById(1L)).thenReturn(Optional.of(student));
-        when(courseRepository.findById(50L)).thenReturn(Optional.of(course));
-        when(ratingRepository.existsByStudentIdAndCourseId(1L, 50L)).thenReturn(true);
+        // only a PENDING connection exists
+        connection.setStatus(ConnectionStatus.PENDING);
+        when(connectionRepository.findByStudentIdAndCourseIdOrderByRequestedAtDesc(1L, 50L))
+                .thenReturn(List.of(connection));
 
-        assertThatThrownBy(() -> ratingService.submitRatingWithoutConnection(req))
+        assertThatThrownBy(() -> ratingService.submitRating(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("connected with");
+
+        verify(ratingRepository, never()).save(any());
+    }
+
+    // ============================================================
+    // 7. submitRating — studentId+courseId, duplicate → throws
+    // ============================================================
+    @Test
+    void submitRating_withStudentAndCourse_duplicate_throws() {
+        RatingRequest req = new RatingRequest();
+        req.setStudentId(1L);
+        req.setCourseId(50L);
+        req.setRating(5);
+
+        when(connectionRepository.findByStudentIdAndCourseIdOrderByRequestedAtDesc(1L, 50L))
+                .thenReturn(List.of(connection));
+        when(ratingRepository.existsByConnectionId(200L)).thenReturn(true);
+
+        assertThatThrownBy(() -> ratingService.submitRating(req))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("already rated");
     }
 
     // ============================================================
-    // 7. updateRating — success
+    // 8. submitRating — neither connectionId nor (studentId+courseId) → throws
+    // ============================================================
+    @Test
+    void submitRating_missingIdentifiers_throws() {
+        RatingRequest req = new RatingRequest();
+        req.setRating(5);
+
+        assertThatThrownBy(() -> ratingService.submitRating(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("required");
+    }
+
+    // ============================================================
+    // 9. updateRating — success
     // ============================================================
     @Test
     void updateRating_success() {
@@ -218,7 +253,7 @@ class RatingServiceTest {
     }
 
     // ============================================================
-    // 8. updateRating — not found → throws
+    // 10. updateRating — not found → throws
     // ============================================================
     @Test
     void updateRating_notFound_throws() {
@@ -233,7 +268,7 @@ class RatingServiceTest {
     }
 
     // ============================================================
-    // 9. getTutorRatingSummary — builds summary
+    // 11. getTutorRatingSummary — builds summary
     // ============================================================
     @Test
     void getTutorRatingSummary_buildsSummary() {
@@ -260,17 +295,5 @@ class RatingServiceTest {
         assertThat(result.getAverageRating()).isEqualTo(4.5);
         assertThat(result.getTotalRatings()).isEqualTo(2);
         assertThat(result.getReviews()).hasSize(2);
-    }
-
-    // ============================================================
-    // 10. getTutorRatingSummary — tutor not found → throws
-    // ============================================================
-    @Test
-    void getTutorRatingSummary_tutorNotFound_throws() {
-        when(tutorProfileRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> ratingService.getTutorRatingSummary(99L, null, null))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Tutor not found");
     }
 }

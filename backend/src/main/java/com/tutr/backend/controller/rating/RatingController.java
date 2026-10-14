@@ -19,21 +19,7 @@ public class RatingController {
     @PostMapping("/submit")
     public ResponseEntity<?> submitRating(@RequestBody RatingRequest request) {
         try {
-            RatingResponse response;
-
-            // If connectionId is provided, use connection-based rating
-            if (request.getConnectionId() != null) {
-                response = ratingService.submitRatingWithConnection(request);
-            } else {
-                // Otherwise use direct student/course rating
-                // Make sure studentId and courseId are provided
-                if (request.getStudentId() == null || request.getCourseId() == null) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body("Either connectionId or both studentId and courseId must be provided");
-                }
-                response = ratingService.submitRatingWithoutConnection(request);
-            }
-
+            RatingResponse response = ratingService.submitRating(request);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -51,6 +37,7 @@ public class RatingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+
     @GetMapping("/course/{courseId}/reviews")
     public ResponseEntity<?> getCourseReviewsWithSummary(@PathVariable Long courseId) {
         try {
@@ -60,5 +47,4 @@ public class RatingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-
 }

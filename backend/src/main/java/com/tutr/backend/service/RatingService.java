@@ -40,30 +40,57 @@ public class RatingService {
     private final FavoriteService favoriteService;
 
     // ============================================================
-    // STUDENT RATING METHODS
+    // STUDENT RATING METHODS (MERGED)
     // ============================================================
 
     @Transactional
-    public RatingResponse submitRatingWithConnection(RatingRequest request) {
-        log.debug("Submitting rating with connectionId={} by student", request.getConnectionId());
+    public RatingResponse submitRating(RatingRequest request) {
+        log.debug("Submitting rating — connectionId={}, studentId={}, courseId={}",
+                request.getConnectionId(), request.getStudentId(), request.getCourseId());
 
+        // 1. Validate star range
         if (request.getRating() < 1 || request.getRating() > 5) {
             throw new RuntimeException("Rating must be between 1 and 5 stars");
         }
 
-        TutorStudentConnection connection = connectionRepository.findById(request.getConnectionId())
-                .orElseThrow(() -> new RuntimeException("Connection not found"));
+        // 2. Resolve the connection
+        TutorStudentConnection connection;
 
-        if (connection.getStatus() != ConnectionStatus.CONFIRMED &&
-                connection.getStatus() != ConnectionStatus.DISCONNECTED) {
-            throw new RuntimeException("Can only rate after connection is confirmed or completed");
+        if (request.getConnectionId() != null) {
+            // Path A: client gave us the connection ID directly
+            connection = connectionRepository.findById(request.getConnectionId())
+                    .orElseThrow(() -> new RuntimeException("Connection not found"));
+        } else {
+            // Path B: client only gave studentId + courseId
+            if (request.getStudentId() == null || request.getCourseId() == null) {
+                throw new RuntimeException(
+                        "Either connectionId or (studentId + courseId) is required");
+            }
+            connection = connectionRepository
+                    .findByStudentIdAndCourseIdOrderByRequestedAtDesc(
+                            request.getStudentId(), request.getCourseId())
+                    .stream()
+                    .filter(c -> c.getStatus() == ConnectionStatus.CONFIRMED
+                            || c.getStatus() == ConnectionStatus.DISCONNECTED)
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException(
+                            "You can only review a tutor you have connected with"));
         }
 
-        if (ratingRepository.existsByConnectionId(request.getConnectionId())) {
-            log.warn("Duplicate rating attempt for connection {}", request.getConnectionId());
+        // 3. Same status check for both paths
+        if (connection.getStatus() != ConnectionStatus.CONFIRMED &&
+                connection.getStatus() != ConnectionStatus.DISCONNECTED) {
+            throw new RuntimeException(
+                    "Can only rate after connection is confirmed or completed");
+        }
+
+        // 4. Duplicate check
+        if (ratingRepository.existsByConnectionId(connection.getId())) {
+            log.warn("Duplicate rating attempt for connection {}", connection.getId());
             throw new RuntimeException("You have already rated this connection");
         }
 
+        // 5. Save
         RatingReview rating = RatingReview.builder()
                 .connection(connection)
                 .student(connection.getStudent())
@@ -76,56 +103,11 @@ public class RatingService {
 
         RatingReview savedRating = ratingRepository.save(rating);
         log.info("Rating submitted: id={}, connectionId={}, rating={}",
-                savedRating.getId(), request.getConnectionId(), request.getRating());
+                savedRating.getId(), connection.getId(), request.getRating());
 
         return RatingResponse.builder()
                 .id(savedRating.getId())
                 .connectionId(savedRating.getConnection().getId())
-                .courseId(savedRating.getCourse().getId())
-                .courseSubject(savedRating.getCourse().getSubject())
-                .rating(savedRating.getRating())
-                .review(savedRating.getReview())
-                .createdAt(savedRating.getCreatedAt())
-                .message("Rating submitted successfully")
-                .build();
-    }
-
-    @Transactional
-    public RatingResponse submitRatingWithoutConnection(RatingRequest request) {
-        log.debug("Submitting rating without connection — studentId={}, courseId={}",
-                request.getStudentId(), request.getCourseId());
-
-        if (request.getRating() < 1 || request.getRating() > 5) {
-            throw new RuntimeException("Rating must be between 1 and 5 stars");
-        }
-
-        StudentProfile student = studentProfileRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        Course course = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found"));
-
-        if (ratingRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
-            log.warn("Duplicate rating attempt — student {} already rated course {}",
-                    student.getId(), course.getId());
-            throw new RuntimeException("You have already rated this course");
-        }
-
-        RatingReview rating = RatingReview.builder()
-                .student(student)
-                .tutor(course.getTutorProfile())
-                .course(course)
-                .rating(request.getRating())
-                .review(request.getReview())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        RatingReview savedRating = ratingRepository.save(rating);
-        log.info("Rating submitted: id={}, studentId={}, courseId={}",
-                savedRating.getId(), student.getId(), course.getId());
-
-        return RatingResponse.builder()
-                .id(savedRating.getId())
                 .studentId(savedRating.getStudent().getId())
                 .courseId(savedRating.getCourse().getId())
                 .courseSubject(savedRating.getCourse().getSubject())

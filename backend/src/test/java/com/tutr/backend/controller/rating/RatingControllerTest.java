@@ -47,14 +47,14 @@ class RatingControllerTest {
     @AfterEach
     void cleanup() { SecurityContextHolder.clearContext(); }
 
-    // 1. POST /submit — with connectionId
+    // 1. POST /submit — with connectionId → 200
     @Test
     void submitRating_withConnection_returns200() throws Exception {
         RatingRequest req = new RatingRequest();
         req.setConnectionId(200L);
         req.setRating(5);
 
-        when(ratingService.submitRatingWithConnection(any()))
+        when(ratingService.submitRating(any()))
                 .thenReturn(RatingResponse.builder().id(500L).rating(5).build());
 
         mockMvc.perform(post("/api/student/ratings/submit")
@@ -64,16 +64,22 @@ class RatingControllerTest {
                 .andExpect(jsonPath("$.rating").value(5));
     }
 
-    // 2. POST /submit — without connection, studentId+courseId → 400 if missing
+    // 2. POST /submit — without connectionId but with studentId+courseId → 200
     @Test
-    void submitRating_missingIds_returns400() throws Exception {
+    void submitRating_withStudentIdAndCourseId_returns200() throws Exception {
         RatingRequest req = new RatingRequest();
-        req.setRating(5);
+        req.setStudentId(1L);
+        req.setCourseId(50L);
+        req.setRating(4);
+
+        when(ratingService.submitRating(any()))
+                .thenReturn(RatingResponse.builder().id(501L).rating(4).build());
 
         mockMvc.perform(post("/api/student/ratings/submit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(4));
     }
 
     // 3. PUT /{ratingId}

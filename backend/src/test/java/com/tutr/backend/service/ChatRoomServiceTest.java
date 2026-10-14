@@ -106,8 +106,8 @@ class ChatRoomServiceTest {
     }
 
     // ============================================================
-    // 5. convertToResponse — returns populated response
-    // ============================================================
+// 5. convertToResponse — returns populated response (user-aware last message)
+// ============================================================
     @Test
     void convertToResponse_populatesFields() {
         StudentProfile student = StudentProfile.builder()
@@ -117,8 +117,10 @@ class ChatRoomServiceTest {
 
         when(studentProfileRepository.findByUserId(10L)).thenReturn(Optional.of(student));
         when(tutorProfileRepository.findByUserId(20L)).thenReturn(Optional.of(tutor));
-        when(messageRepository.findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(chatRoom))
+
+        when(messageRepository.findFirstByChatRoomOrderBySentAtDescForUserNative(100L, 10L))
                 .thenReturn(null);
+
         when(messageRepository.countUnreadMessagesForRoom(100L, 10L)).thenReturn(3L);
 
         ChatRoomResponse resp = chatRoomService.convertToResponse(chatRoom, 10L);
@@ -127,5 +129,6 @@ class ChatRoomServiceTest {
         assertThat(resp.getStudentName()).isEqualTo("Ali Student");
         assertThat(resp.getTutorName()).isEqualTo("Ahmed Tutor");
         assertThat(resp.getUnreadCount()).isEqualTo(3L);
+        assertThat(resp.getLastMessage()).isNull();
     }
 }

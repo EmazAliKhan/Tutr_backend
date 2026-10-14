@@ -13,19 +13,19 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    // ✅ ALL messages for chat (returns List - OK)
+    //  ALL messages for chat (returns List - OK)
     @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom " +
             "AND m.isDeletedForSender = false AND m.isDeletedForRecipient = false " +
             "ORDER BY m.sentAt DESC")
     List<Message> findByChatRoomOrderBySentAtDesc(ChatRoom chatRoom, Pageable pageable);
 
-    // ✅ FIXED: ONLY latest message (returns single Message)
-    // Spring Data JPA automatically adds LIMIT 1
-    Message findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(
-            ChatRoom chatRoom
-    );
+//    // ONLY latest message (returns single Message)
+//    // Spring Data JPA automatically adds LIMIT 1
+//    Message findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(
+//            ChatRoom chatRoom
+//    );
 
-    // ✅ For user-specific messages (returns List - OK)
+    //  For user-specific messages (returns List - OK)
     @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom " +
             "AND ((m.sender.id = :userId AND m.isDeletedForSender = false) " +
             "OR (m.recipient.id = :userId AND m.isDeletedForRecipient = false)) " +
@@ -36,7 +36,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             Pageable pageable
     );
 
-    // ✅ FIXED: ONLY latest message for user (returns single Message)
+    // : ONLY latest message for user (returns single Message)
     @Query(value = "SELECT m.* FROM messages m " +
             "WHERE m.chat_room_id = :chatRoomId " +
             "AND ((m.sender_id = :userId AND m.is_deleted_for_sender = false) " +
@@ -49,7 +49,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             @Param("userId") Long userId
     );
 
-    // ✅ Count unread messages
+    //  Count unread messages
     @Query("SELECT COUNT(m) FROM Message m WHERE m.chatRoom.id = :roomId " +
             "AND m.recipient.id = :userId AND m.isRead = false " +
             "AND m.isDeletedForRecipient = false")

@@ -84,13 +84,12 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public ChatRoomResponse convertToResponse(ChatRoom chatRoom, Long currentUserId) {
 
-        //  Fetch student and tutor details
+        // Fetch student and tutor details
         String studentName = "Student";
         String tutorName = "Tutor";
         String studentImage = null;
         String tutorImage = null;
 
-        // Get student details by USER ID
         Optional<StudentProfile> studentOpt = studentProfileRepository.findByUserId(chatRoom.getStudentUserId());
         if (studentOpt.isPresent()) {
             StudentProfile student = studentOpt.get();
@@ -98,7 +97,6 @@ public class ChatRoomService {
             studentImage = student.getProfilePictureUrl();
         }
 
-        //  Get tutor details by USER ID
         Optional<TutorProfile> tutorOpt = tutorProfileRepository.findByUserId(chatRoom.getTutorUserId());
         if (tutorOpt.isPresent()) {
             TutorProfile tutor = tutorOpt.get();
@@ -106,9 +104,14 @@ public class ChatRoomService {
             tutorImage = tutor.getProfilePictureUrl();
         }
 
-        // Get last message
-        Message lastMessage = messageRepository
-                .findFirstByChatRoomAndIsDeletedForSenderFalseAndIsDeletedForRecipientFalseOrderBySentAtDesc(chatRoom);
+        //  Get last message — user-aware (only hides messages deleted BY THIS USER)
+        Message lastMessage = null;
+        if (currentUserId != null) {
+            lastMessage = messageRepository
+                    .findFirstByChatRoomOrderBySentAtDescForUserNative(
+                            chatRoom.getId(), currentUserId);
+        }
+
         // Get unread count for current user
         long unreadCount = 0;
         if (currentUserId != null) {
