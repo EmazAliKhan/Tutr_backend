@@ -117,9 +117,30 @@ public class ChatFacade {
         if (senderName == null || senderName.isBlank()) senderName = "New message";
         if (senderImage == null) senderImage = "";
 
-        String preview = request.getContent() != null && !request.getContent().isBlank()
-                ? request.getContent()
-                : "Sent an attachment";
+        String preview;
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            preview = "📍 Shared a location";
+        } else if (request.getContent() != null && !request.getContent().isBlank()) {
+            preview = request.getContent();
+        } else if (request.getAudioUrl() != null && !request.getAudioUrl().isBlank()) {
+            preview = "🎤 Voice message";
+        } else if (request.getFileUrl() != null && !request.getFileUrl().isBlank()) {
+            String type = request.getFileType() != null
+                    ? request.getFileType().toLowerCase()
+                    : "";
+            if (type.equals("jpg") || type.equals("jpeg") || type.equals("png")
+                    || type.equals("gif") || type.equals("webp")) {
+                preview = "📷 Photo";
+            } else if (type.equals("mp4") || type.equals("mov") || type.equals("webm")
+                    || type.equals("mkv") || type.equals("avi")) {
+                preview = "🎥 Video";
+            } else {
+                preview = "📎 Attachment";
+            }
+        } else {
+            preview = "New message";
+        }
+
         if (preview.length() > 60) preview = preview.substring(0, 60) + "...";
 
         long badge = messageService.getUnreadCount(recipientId);

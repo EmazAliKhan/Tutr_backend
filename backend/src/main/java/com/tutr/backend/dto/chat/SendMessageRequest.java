@@ -28,4 +28,7 @@ public class SendMessageRequest {
     private String fileType;
 
     private Long replyToMessageId;
+
+    private Double latitude;
+    private Double longitude;
 }

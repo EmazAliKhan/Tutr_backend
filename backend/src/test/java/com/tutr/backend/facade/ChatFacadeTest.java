@@ -195,4 +195,41 @@ class ChatFacadeTest {
 
         verify(messageService, never()).getMessages(anyLong(), anyLong(), anyInt(), anyInt());
     }
+    // ============================================================
+    // 9. sendMessage — location message fires push with location preview
+    // ============================================================
+    @Test
+    void sendMessage_locationMessage_firesPushWithLocationPreview() {
+        SendMessageRequest req = new SendMessageRequest();
+        req.setChatRoomId(100L);
+        req.setSenderId(10L);
+        req.setContent("📍 My location");
+        req.setLatitude(31.5204);
+        req.setLongitude(74.3587);
+
+        MessageResponse msgResp = MessageResponse.builder().id(501L).build();
+        ChatRoomResponse roomInfo = ChatRoomResponse.builder()
+                .studentName("Ali Student")
+                .studentImage("/s.jpg")
+                .tutorName("Ahmed Tutor")
+                .tutorImage("/t.jpg")
+                .build();
+
+        when(chatRoomService.getChatRoomById(100L)).thenReturn(chatRoom);
+        when(connectionService.hasConfirmedConnection(10L, 20L)).thenReturn(true);
+        when(messageService.sendMessage(req)).thenReturn(msgResp);
+        when(chatRoomService.convertToResponse(chatRoom, 10L)).thenReturn(roomInfo);
+        when(messageService.getUnreadCount(20L)).thenReturn(1L);
+
+        MessageResponse result = chatFacade.sendMessage(req);
+
+        assertThat(result.getId()).isEqualTo(501L);
+
+        // ✅ Assert the preview is the location-specific string, not the raw content
+        verify(pushNotificationService).sendToUserAsync(
+                eq(20L),
+                eq("Ali Student"),
+                eq("📍 Shared a location"),   // ← the new preview
+                eq(100L), eq(10L), eq("/s.jpg"), eq(1L));
+    }
 }

@@ -54,6 +54,12 @@ public class Message {
     @Column(name = "reply_to_message_id")
     private Long replyToMessageId;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private MessageType messageType = MessageType.TEXT;

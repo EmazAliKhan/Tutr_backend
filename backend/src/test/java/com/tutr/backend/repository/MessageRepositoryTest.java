@@ -18,7 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// ===================================== 7 TESTS ============================
+// ===================================== 8 TESTS ============================
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -52,23 +52,31 @@ class MessageRepositoryTest {
                 .lastMessageAt(LocalDateTime.now())
                 .build());
 
-        em.persist(Message.builder()
+        // Insert both messages normally (@PrePersist sets sentAt)
+        Message hello = em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Hello").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now().minusSeconds(1))
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
 
-        em.persist(Message.builder()
+        Message second = em.persist(Message.builder()
                 .chatRoom(chatRoom).sender(sender).recipient(recipient)
                 .content("Second message").messageType(MessageType.TEXT)
-                .sentAt(LocalDateTime.now())
                 .isRead(false)
                 .isDeletedForSender(false).isDeletedForRecipient(false)
                 .build());
 
+        // Flush so @PrePersist sets initial sentAt for both
         em.flush();
+
+        // Now overwrite sentAt AFTER persist — @PrePersist won't fire again,
+        // so this update sticks. Guarantees a 1-second gap → deterministic ordering.
+        hello.setSentAt(LocalDateTime.now().minusSeconds(1));
+        second.setSentAt(LocalDateTime.now());
+
+        em.flush();
+        em.clear();
     }
 
     // 1. findByChatRoomOrderBySentAtDesc
@@ -147,5 +155,25 @@ class MessageRepositoryTest {
         List<Message> forRecipient = repository.findMessagesForUser(
                 chatRoom, recipient.getId(), PageRequest.of(0, 10));
         assertThat(forRecipient).hasSize(2);
+    }
+
+    // 8. Location message persists lat/lng and reloads correctly
+    @Test
+    void locationMessage_persistsAndReloads() {
+        Message loc = em.persist(Message.builder()
+                .chatRoom(chatRoom).sender(sender).recipient(recipient)
+                .content(" My location")
+                .messageType(MessageType.TEXT)
+                .latitude(31.5204).longitude(74.3587)
+                .isRead(false)
+                .isDeletedForSender(false).isDeletedForRecipient(false)
+                .build());
+        em.flush();
+        em.clear();
+
+        Message loaded = repository.findById(loc.getId()).orElseThrow();
+        assertThat(loaded.getLatitude()).isEqualTo(31.5204);
+        assertThat(loaded.getLongitude()).isEqualTo(74.3587);
+        assertThat(loaded.getContent()).isEqualTo(" My location");
     }
 }

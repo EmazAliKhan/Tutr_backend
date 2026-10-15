@@ -157,12 +157,12 @@ public class UserCleanupScheduler {
         }
     }
 
-    // ============================================================
-    // MANUAL CLEANUP TRIGGER
-    // ============================================================
-    @Transactional
-    public void manualCleanup() {
-        log.info("Manual cleanup triggered");
-        deleteIncompleteUsers();
-    }
+//    // ============================================================
+//    // MANUAL CLEANUP TRIGGER
+//    // ============================================================
+//    @Transactional
+//    public void manualCleanup() {
+//        log.info("Manual cleanup triggered");
+//        deleteIncompleteUsers();
+//    }
 }

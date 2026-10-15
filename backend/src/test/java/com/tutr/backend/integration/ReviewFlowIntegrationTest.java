@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// ===================================== 6 TESTS ============================
+// ===================================== 7 TESTS ============================
 class ReviewFlowIntegrationTest extends IntegrationTestBase {
 
     @Autowired private UserRepository userRepository;
@@ -93,12 +93,11 @@ class ReviewFlowIntegrationTest extends IntegrationTestBase {
     }
 
     // ============================================================
-    // 2. Submit without connection using studentId + courseId
+    // 2. Submit via studentId + courseId with an existing
+    //    CONFIRMED connection → 200
     // ============================================================
     @Test
-    void submitRating_withoutConnection_persists() throws Exception {
-        connectionRepository.deleteAll();
-
+    void submitRating_withoutConnectionId_butWithConnection_persists() throws Exception {
         String json = """
                 {
                     "studentId": %d,
@@ -163,8 +162,8 @@ class ReviewFlowIntegrationTest extends IntegrationTestBase {
     }
 
     // ============================================================
-// 5. Course reviews endpoint returns reviews + summary
-// ============================================================
+    // 5. Course reviews endpoint returns reviews + summary
+    // ============================================================
     @Test
     void getCourseReviews_returnsSummary() throws Exception {
         ratingRepository.saveAndFlush(RatingReview.builder()
@@ -173,7 +172,7 @@ class ReviewFlowIntegrationTest extends IntegrationTestBase {
                 .build());
 
         mockMvc.perform(get("/api/student/ratings/course/" + course.getId() + "/reviews")
-                        .header("Authorization", "Bearer " + studentJwt))   // ← ADD THIS
+                        .header("Authorization", "Bearer " + studentJwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.averageRating").value(5.0))
                 .andExpect(jsonPath("$.totalRatings").value(1));
@@ -202,5 +201,28 @@ class ReviewFlowIntegrationTest extends IntegrationTestBase {
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rating").value(5));
+    }
+
+    // ============================================================
+    // 7. Submit via studentId + courseId with NO connection → 400
+    // ============================================================
+    @Test
+    void submitRating_noConnection_returns400() throws Exception {
+        connectionRepository.deleteAll();
+
+        String json = """
+                {
+                    "studentId": %d,
+                    "courseId": %d,
+                    "rating": 5,
+                    "review": "Trying without connection"
+                }
+                """.formatted(student.getId(), course.getId());
+
+        mockMvc.perform(post("/api/student/ratings/submit")
+                        .header("Authorization", "Bearer " + studentJwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -28,4 +28,6 @@ public class MessageResponse {
     private String replyToContent;
     private String replyToSenderName;
     private String replyToMessageType;
+    private Double latitude;
+    private Double longitude;
 }
