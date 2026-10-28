@@ -15,5 +15,6 @@ public class AdminStudentDealItem {
     private String instructor;
     private Double basePrice;
     private Double bidPrice;
+    private Double tutorOffer;
     private String status; // "Pending" / "Negotiating"
 }

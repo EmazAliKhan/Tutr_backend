@@ -185,8 +185,8 @@ public class UserService {
         }
 
         user.setRegistrationStep(2);
-        user.setDeleteAt(null);
-        user.setDeletionWarningSent(false);
+//        user.setDeleteAt(null);
+//        user.setDeletionWarningSent(false);
         userRepository.save(user);
 
         TutorProfile profile = TutorProfile.builder()

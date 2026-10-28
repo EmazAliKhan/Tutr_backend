@@ -67,7 +67,7 @@ public class AdminDashboardService {
     // STATS
     // ============================================================
     private AdminDashboardStatsResponse buildStats() {
-        // ✅ Totals — ACTIVE + INACTIVE only
+        //  Totals — ACTIVE + INACTIVE only
         Long totalUsers = userRepository.countActiveAndInactiveUsers();
         Long totalTutors = userRepository.countByRoleAndActiveOrInactive(Role.TUTOR);
         Long totalStudents = userRepository.countByRoleAndActiveOrInactive(Role.STUDENT);
@@ -78,7 +78,7 @@ public class AdminDashboardService {
         LocalDateTime currentStart  = now.minusDays(30);
         LocalDateTime previousStart = now.minusDays(60);
 
-        // ✅ Growth — ACTIVE + INACTIVE only, in each 30-day window
+        //  Growth — ACTIVE + INACTIVE only, in each 30-day window
         Double usersGrowth = computeGrowth(
                 userRepository.countActiveAndInactiveBetween(previousStart, currentStart),
                 userRepository.countActiveAndInactiveBetween(currentStart, now)
@@ -111,7 +111,6 @@ public class AdminDashboardService {
 
     /**
      * Growth % = (current - previous) / previous * 100
-     * Returns 0.0 if there was no previous data.
      */
     private Double computeGrowth(Long previous, Long current) {
         if (previous == null || previous == 0) {

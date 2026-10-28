@@ -338,6 +338,7 @@ public class AdminTutorService {
                 .student(student.getFirstName() + " " + student.getLastName())
                 .basePrice(conn.getOriginalPrice())
                 .bidPrice(conn.getStudentCounterOffer())
+                .tutorOffer(conn.getTutorCounterOffer())
                 .status(statusLabel)
                 .build();
     }

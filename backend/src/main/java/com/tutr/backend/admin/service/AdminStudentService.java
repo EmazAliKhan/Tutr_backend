@@ -312,6 +312,7 @@ public class AdminStudentService {
                 .instructor(tutor.getFirstName() + " " + tutor.getLastName())
                 .basePrice(conn.getOriginalPrice())
                 .bidPrice(conn.getStudentCounterOffer())
+                .tutorOffer(conn.getTutorCounterOffer())
                 .status(statusLabel)
                 .build();
     }
