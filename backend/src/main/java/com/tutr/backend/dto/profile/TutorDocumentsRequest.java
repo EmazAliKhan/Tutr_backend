@@ -7,5 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class TutorDocumentsRequest {
     private Long userId;
     private MultipartFile cnicImage;
+    private MultipartFile cnicBackImage;
     private MultipartFile certificateImage;
 }

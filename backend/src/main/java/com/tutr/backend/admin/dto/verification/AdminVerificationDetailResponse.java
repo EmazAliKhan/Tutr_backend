@@ -30,6 +30,7 @@ public class AdminVerificationDetailResponse {
 
     // Documents
     private String cnicImageUrl;
+    private String cnicBackImageUrl;
     private String certificateImageUrl;
 
     // Status

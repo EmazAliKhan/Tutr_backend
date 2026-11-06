@@ -42,4 +42,8 @@ public class StudentBid {
     private Double studentBidPrice;        // What student offered
     private Double tutorOffer;              // What tutor countered (if any)
     private Double agreedPrice;
+
+    private LocalDateTime expiresAt;
+    private LocalDateTime studentRespondedAt;
+    private LocalDateTime tutorRespondedAt;
 }

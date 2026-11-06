@@ -105,6 +105,22 @@ public class FileStorageService {
         return "/uploads/documents/" + documentType + "/" + filename;
     }
 
+    // ============  NEW OVERLOAD — for cnic back ============
+    public String storeDocumentWithPrefix(MultipartFile file, String documentType, String filenamePrefix, Long userId) throws IOException {
+        Path uploadPath = buildUploadPath(baseUploadDir, "documents", documentType);
+        ensureDirectoryExists(uploadPath);
+
+        String extension = extractExtension(file.getOriginalFilename(), ".pdf");
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String filename = "user_" + userId + "_" + filenamePrefix + "_" + timestamp + "_" + UUID.randomUUID() + extension;
+
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath);
+
+        log.info("Document ({} → prefix={}): {}", documentType, filenamePrefix, filePath.toAbsolutePath());
+        return "/uploads/documents/" + documentType + "/" + filename;
+    }
+
     // ============ CHAT AUDIO ============
 
     public String storeAudioFile(MultipartFile file, Long userId) throws IOException {

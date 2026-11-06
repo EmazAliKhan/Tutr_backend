@@ -34,8 +34,8 @@ public class TutorDocumentsService {
     private final com.tutr.backend.admin.service.AdminNotificationService adminNotificationService;
 
     // ============================================================
-    // UPLOAD DOCUMENTS
-    // ============================================================
+// UPLOAD DOCUMENTS
+// ============================================================
     @Transactional
     public TutorDocuments uploadDocuments(TutorDocumentsRequest request) {
         log.debug("Uploading documents for userId={}", request.getUserId());
@@ -53,10 +53,25 @@ public class TutorDocumentsService {
                     "This account has been permanently disabled and cannot upload documents.");
         }
 
+        // ============================================================
+        //  GUARD: ALL THREE FILES ARE REQUIRED
+        //    Rejects any submission missing front, back, or certificate.
+        //    Applies to new users, rejected resubmissions, and edits.
+        // ============================================================
+        if (request.getCnicImage() == null || request.getCnicImage().isEmpty()) {
+            throw new RuntimeException("CNIC front image is required");
+        }
+        if (request.getCnicBackImage() == null || request.getCnicBackImage().isEmpty()) {
+            throw new RuntimeException("CNIC back image is required");
+        }
+        if (request.getCertificateImage() == null || request.getCertificateImage().isEmpty()) {
+            throw new RuntimeException("Certificate (last degree) image is required");
+        }
+
         TutorDocuments documents = documentsRepository.findByUser(user)
                 .orElse(new TutorDocuments());
 
-        // ✅ Track re-submissions
+        // Track re-submissions
         if (documents.getId() != null) {
             int newCount = documents.getResubmissionCount() + 1;
             documents.setResubmissionCount(newCount);
@@ -67,47 +82,47 @@ public class TutorDocumentsService {
         documents.setUser(user);
 
         try {
-            // Delete old files
+            // Delete old files (all 3 will be replaced — guard above guarantees it)
             if (documents.getId() != null) {
                 if (documents.getCnicImageUrl() != null) {
                     fileStorageService.deleteFile(documents.getCnicImageUrl());
+                }
+                if (documents.getCnicBackImageUrl() != null) {
+                    fileStorageService.deleteFile(documents.getCnicBackImageUrl());
                 }
                 if (documents.getCertificateImageUrl() != null) {
                     fileStorageService.deleteFile(documents.getCertificateImageUrl());
                 }
             }
 
-            // Upload new files
-            if (request.getCnicImage() != null && !request.getCnicImage().isEmpty()) {
-                String cnicUrl = fileStorageService.storeDocument(
-                        request.getCnicImage(), "cnic", user.getId());
-                documents.setCnicImageUrl(cnicUrl);
-            }
+            // Upload new files (guard above guarantees all 3 are present)
+            String cnicUrl = fileStorageService.storeDocument(
+                    request.getCnicImage(), "cnic", user.getId());
+            documents.setCnicImageUrl(cnicUrl);
 
-            if (request.getCertificateImage() != null && !request.getCertificateImage().isEmpty()) {
-                String certUrl = fileStorageService.storeDocument(
-                        request.getCertificateImage(), "certificate", user.getId());
-                documents.setCertificateImageUrl(certUrl);
-            }
+            String cnicBackUrl = fileStorageService.storeDocumentWithPrefix(
+                    request.getCnicBackImage(), "cnic", "cnic_back", user.getId());
+            documents.setCnicBackImageUrl(cnicBackUrl);
+
+            String certUrl = fileStorageService.storeDocument(
+                    request.getCertificateImage(), "certificate", user.getId());
+            documents.setCertificateImageUrl(certUrl);
 
             documents.setUploadedAt(LocalDateTime.now());
             documents.setVerificationStatus(VerificationStatus.PENDING);
             documents.setVerifiedAt(null);
-            documents.setRejectionReason(null);   // ✅ clear old reason
+            documents.setRejectionReason(null);
 
-            // ✅ RESET ACCOUNT STATUS to PENDING so user is no longer stuck as REJECTED
             user.setAccountStatus(AccountStatus.PENDING);
-
             user.setRegistrationStep(3);
             user.setDeleteAt(null);
             user.setDeletionWarningSent(false);
             userRepository.save(user);
 
             TutorDocuments saved = documentsRepository.save(documents);
-            log.info("Documents re-submitted: documentsId={}, userId={}, status=PENDING",
+            log.info("Documents submitted: documentsId={}, userId={}, status=PENDING",
                     saved.getId(), user.getId());
 
-            //  Notify all admins about the verification request
             try {
                 String tutorName = resolveTutorName(user);
                 adminNotificationService.notifyAllAdmins(
@@ -161,7 +176,7 @@ public class TutorDocumentsService {
 
         switch (status) {
             case APPROVED -> {
-                documents.setRejectionReason(null);   // ✅ clear on approve
+                documents.setRejectionReason(null);
                 handleApproval(user);
             }
             case REJECTED -> {
@@ -169,7 +184,7 @@ public class TutorDocumentsService {
                         ? rejectionReason
                         : "Your documents could not be verified.";
 
-                documents.setRejectionReason(finalReason);  // ✅ SAVE the reason
+                documents.setRejectionReason(finalReason);
 
                 handleRejection(user, finalReason, permanentBan);
             }

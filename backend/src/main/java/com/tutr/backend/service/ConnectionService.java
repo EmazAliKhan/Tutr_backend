@@ -582,6 +582,9 @@ public class ConnectionService {
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
                             .status(conn.getStatus().toString())
+                            .expiresAt(conn.getExpiresAt())
+                            .studentRespondedAt(conn.getStudentRespondedAt())
+                            .tutorRespondedAt(conn.getTutorRespondedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -626,6 +629,9 @@ public class ConnectionService {
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
                             .status(conn.getStatus().toString())
+                            .expiresAt(conn.getExpiresAt())
+                            .studentRespondedAt(conn.getStudentRespondedAt())
+                            .tutorRespondedAt(conn.getTutorRespondedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -669,6 +675,9 @@ public class ConnectionService {
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
                             .agreedPrice(conn.getAgreedPrice())
+                            .expiresAt(conn.getExpiresAt())
+                            .studentRespondedAt(conn.getStudentRespondedAt())
+                            .tutorRespondedAt(conn.getTutorRespondedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -716,6 +725,9 @@ public class ConnectionService {
                             .studentBidPrice(conn.getStudentCounterOffer())
                             .tutorOffer(conn.getTutorCounterOffer())
                             .agreedPrice(conn.getAgreedPrice())
+                            .expiresAt(conn.getExpiresAt())
+                            .studentRespondedAt(conn.getStudentRespondedAt())
+                            .tutorRespondedAt(conn.getTutorRespondedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -762,6 +774,9 @@ public class ConnectionService {
                 .studentBidPrice(connection.getStudentCounterOffer())
                 .tutorOffer(connection.getTutorCounterOffer())
                 .agreedPrice(connection.getAgreedPrice())
+                .expiresAt(connection.getExpiresAt())
+                .studentRespondedAt(connection.getStudentRespondedAt())
+                .tutorRespondedAt(connection.getTutorRespondedAt())
                 .build();
     }
 
@@ -809,6 +824,9 @@ public class ConnectionService {
                 .studentBidPrice(conn.getStudentCounterOffer())
                 .tutorOffer(conn.getTutorCounterOffer())
                 .status(conn.getStatus().toString())
+                .expiresAt(conn.getExpiresAt())
+                .studentRespondedAt(conn.getStudentRespondedAt())
+                .tutorRespondedAt(conn.getTutorRespondedAt())
                 .build();
     }
 

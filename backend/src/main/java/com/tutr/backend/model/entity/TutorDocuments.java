@@ -22,6 +22,7 @@ public class TutorDocuments {
     private User user;
 
     private String cnicImageUrl;
+    private String cnicBackImageUrl;
     private String certificateImageUrl;
 
     @Column(length = 1000)

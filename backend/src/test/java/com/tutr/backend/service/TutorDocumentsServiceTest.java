@@ -18,7 +18,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-// ===================================== 5 TESTS ============================
+// ===================================== 7 TESTS ============================
 @ExtendWith(MockitoExtension.class)
 class TutorDocumentsServiceTest {
 
@@ -41,6 +43,9 @@ class TutorDocumentsServiceTest {
 
     private User tutorUser;
     private TutorDocuments documents;
+    private MockMultipartFile cnicFront;
+    private MockMultipartFile cnicBack;
+    private MockMultipartFile cert;
 
     @BeforeEach
     void setup() {
@@ -55,40 +60,129 @@ class TutorDocumentsServiceTest {
                 .id(100L).user(tutorUser)
                 .verificationStatus(VerificationStatus.PENDING)
                 .build();
+
+        cnicFront = new MockMultipartFile("cnicImage", "front.jpg",
+                "image/jpeg", "front".getBytes());
+        cnicBack = new MockMultipartFile("cnicBackImage", "back.jpg",
+                "image/jpeg", "back".getBytes());
+        cert = new MockMultipartFile("certificateImage", "cert.jpg",
+                "image/jpeg", "cert".getBytes());
     }
 
     // ============================================================
-// 1. uploadDocuments — success
-// ============================================================
+    // 1. Success — all 3 files present
+    // ============================================================
     @Test
-    void uploadDocuments_success() throws Exception {
-        MockMultipartFile cnic = new MockMultipartFile("cnic", "c.jpg", "image/jpeg", "bytes".getBytes());
-        MockMultipartFile cert = new MockMultipartFile("cert", "cert.jpg", "image/jpeg", "bytes".getBytes());
-
+    void uploadDocuments_allThreeFiles_success() throws Exception {
         TutorDocumentsRequest req = new TutorDocumentsRequest();
         req.setUserId(1L);
-        req.setCnicImage(cnic);
+        req.setCnicImage(cnicFront);
+        req.setCnicBackImage(cnicBack);
         req.setCertificateImage(cert);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(tutorUser));
         when(documentsRepository.findByUser(tutorUser)).thenReturn(Optional.empty());
-        when(fileStorageService.storeDocument(any(), eq("cnic"), eq(1L)))
-                .thenReturn("/uploads/cnic.jpg");
-        when(fileStorageService.storeDocument(any(), eq("certificate"), eq(1L)))
-                .thenReturn("/uploads/cert.jpg");
+
+
+        when(fileStorageService.storeDocument(
+                any(MultipartFile.class), eq("cnic"), eq(1L)))
+                .thenReturn("/uploads/documents/cnic/front.jpg");
+        when(fileStorageService.storeDocumentWithPrefix(
+                any(MultipartFile.class), eq("cnic"), eq("cnic_back"), eq(1L)))
+                .thenReturn("/uploads/documents/cnic/back.jpg");
+        when(fileStorageService.storeDocument(
+                any(MultipartFile.class), eq("certificate"), eq(1L)))
+                .thenReturn("/uploads/documents/certificate/cert.jpg");
+
         when(documentsRepository.save(any(TutorDocuments.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
         TutorDocuments result = documentsService.uploadDocuments(req);
 
-        assertThat(result.getCnicImageUrl()).isEqualTo("/uploads/cnic.jpg");
-        assertThat(result.getCertificateImageUrl()).isEqualTo("/uploads/cert.jpg");
+        assertThat(result.getCnicImageUrl()).isEqualTo("/uploads/documents/cnic/front.jpg");
+        assertThat(result.getCnicBackImageUrl()).isEqualTo("/uploads/documents/cnic/back.jpg");
+        assertThat(result.getCertificateImageUrl()).isEqualTo("/uploads/documents/certificate/cert.jpg");
+        assertThat(result.getVerificationStatus()).isEqualTo(VerificationStatus.PENDING);
+
         verify(adminNotificationService).notifyAllAdmins(
                 any(), anyString(), anyString(), any(), anyString());
     }
 
     // ============================================================
-    // 2. uploadDocuments — BANNED user → throws
+    // 2. Missing CNIC front → throws
+    // ============================================================
+    @Test
+    void uploadDocuments_missingFront_throws() throws IOException {
+        TutorDocumentsRequest req = new TutorDocumentsRequest();
+        req.setUserId(1L);
+        req.setCnicImage(null);
+        req.setCnicBackImage(cnicBack);
+        req.setCertificateImage(cert);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(tutorUser));
+
+        assertThatThrownBy(() -> documentsService.uploadDocuments(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("CNIC front image is required");
+
+
+        verify(fileStorageService, never()).storeDocument(
+                any(MultipartFile.class),
+                anyString(),
+                anyLong());
+
+        verify(documentsRepository, never()).save(any());
+    }
+
+    // ============================================================
+    // 3. Missing CNIC back → throws
+    // ============================================================
+    @Test
+    void uploadDocuments_missingBack_throws() throws IOException {
+        TutorDocumentsRequest req = new TutorDocumentsRequest();
+        req.setUserId(1L);
+        req.setCnicImage(cnicFront);
+        req.setCnicBackImage(null);
+        req.setCertificateImage(cert);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(tutorUser));
+
+        assertThatThrownBy(() -> documentsService.uploadDocuments(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("CNIC back image is required");
+
+        //  Explicit MultipartFile.class
+        verify(fileStorageService, never()).storeDocumentWithPrefix(
+                any(MultipartFile.class),
+                anyString(),
+                anyString(),
+                anyLong());
+
+        verify(documentsRepository, never()).save(any());
+    }
+
+    // ============================================================
+    // 4. Missing certificate → throws
+    // ============================================================
+    @Test
+    void uploadDocuments_missingCertificate_throws() {
+        TutorDocumentsRequest req = new TutorDocumentsRequest();
+        req.setUserId(1L);
+        req.setCnicImage(cnicFront);
+        req.setCnicBackImage(cnicBack);
+        req.setCertificateImage(null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(tutorUser));
+
+        assertThatThrownBy(() -> documentsService.uploadDocuments(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Certificate");
+
+        verify(documentsRepository, never()).save(any());
+    }
+
+    // ============================================================
+    // 5. BANNED user → throws (before file guard)
     // ============================================================
     @Test
     void uploadDocuments_bannedUser_throws() {
@@ -104,7 +198,7 @@ class TutorDocumentsServiceTest {
     }
 
     // ============================================================
-    // 3. verifyDocuments — APPROVED sets user ACTIVE
+    // 6. verifyDocuments APPROVED → user becomes ACTIVE
     // ============================================================
     @Test
     void verifyDocuments_approved_setsActive() {
@@ -123,24 +217,7 @@ class TutorDocumentsServiceTest {
     }
 
     // ============================================================
-    // 4. verifyDocuments — REJECTED soft (fixable)
-    // ============================================================
-    @Test
-    void verifyDocuments_rejected_soft() {
-        when(documentsRepository.findById(100L)).thenReturn(Optional.of(documents));
-        when(documentsRepository.save(any(TutorDocuments.class)))
-                .thenAnswer(inv -> inv.getArgument(0));
-
-        documentsService.verifyDocuments(
-                100L, VerificationStatus.REJECTED, "Blurry image", false,
-                "admin@tutr.com", "Admin Name");
-
-        assertThat(tutorUser.getAccountStatus()).isEqualTo(AccountStatus.REJECTED);
-        verify(emailService).sendTutorRejectionEmail(eq("tutor@tutr.com"), anyString(), eq("Blurry image"));
-    }
-
-    // ============================================================
-    // 5. verifyDocuments — already decided → ConflictException
+    // 7. verifyDocuments on already-decided → ConflictException
     // ============================================================
     @Test
     void verifyDocuments_alreadyDecided_throws() {

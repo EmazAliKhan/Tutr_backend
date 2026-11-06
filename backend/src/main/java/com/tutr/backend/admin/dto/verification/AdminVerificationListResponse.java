@@ -29,6 +29,7 @@ public class AdminVerificationListResponse {
     private LocalDateTime uploadedAt;
     private LocalDateTime verifiedAt;
     private String cnicImageUrl;
+    private String cnicBackImageUrl;
     private String certificateImageUrl;
     private String rejectionReason;
     private int resubmissionCount;

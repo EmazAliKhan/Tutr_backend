@@ -139,6 +139,7 @@ public class AdminVerificationService {
                 .uploadedAt(doc.getUploadedAt())
                 .verifiedAt(doc.getVerifiedAt())
                 .cnicImageUrl(doc.getCnicImageUrl())
+                .cnicBackImageUrl(doc.getCnicBackImageUrl())
                 .certificateImageUrl(doc.getCertificateImageUrl())
                 .rejectionReason(doc.getRejectionReason())
                 .resubmissionCount(doc.getResubmissionCount())
@@ -158,6 +159,7 @@ public class AdminVerificationService {
                         .userId(user.getId())
                         .email(user.getEmail())
                         .cnicImageUrl(doc.getCnicImageUrl())
+                        .cnicBackImageUrl(doc.getCnicBackImageUrl())
                         .certificateImageUrl(doc.getCertificateImageUrl())
                         .status(doc.getVerificationStatus())
 

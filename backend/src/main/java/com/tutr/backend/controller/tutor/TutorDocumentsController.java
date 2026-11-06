@@ -21,17 +21,20 @@ public class TutorDocumentsController {
     public ResponseEntity<?> uploadDocuments(
             @RequestParam("userId") Long userId,
             @RequestParam(value = "cnicImage", required = false) MultipartFile cnicImage,
+            @RequestParam(value = "cnicBackImage", required = false) MultipartFile cnicBackImage,
             @RequestParam(value = "certificateImage", required = false) MultipartFile certificateImage) {
 
         try {
             System.out.println("===== DOCUMENT UPLOAD STARTED =====");
             System.out.println("userId: " + userId);
             System.out.println("cnicImage: " + (cnicImage != null ? cnicImage.getOriginalFilename() : "null"));
+            System.out.println("cnicBackImage: " + (cnicBackImage != null ? cnicBackImage.getOriginalFilename() : "null"));
             System.out.println("certificateImage: " + (certificateImage != null ? certificateImage.getOriginalFilename() : "null"));
 
             TutorDocumentsRequest request = new TutorDocumentsRequest();
             request.setUserId(userId);
             request.setCnicImage(cnicImage);
+            request.setCnicBackImage(cnicBackImage);
             request.setCertificateImage(certificateImage);
 
             TutorDocuments documents = documentsService.uploadDocuments(request);

@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
 // ===================================== 6 TESTS ============================
 @ExtendWith(MockitoExtension.class)
 class AdminVerificationServiceTest {
@@ -62,14 +63,15 @@ class AdminVerificationServiceTest {
         docs = TutorDocuments.builder()
                 .id(100L).user(user)
                 .verificationStatus(VerificationStatus.PENDING)
-                .cnicImageUrl("/cnic.jpg")
+                .cnicImageUrl("/cnic_front.jpg")
+                .cnicBackImageUrl("/cnic_back.jpg")
                 .certificateImageUrl("/cert.jpg")
                 .resubmissionCount(0)
                 .build();
     }
 
     // ============================================================
-    // 1. getVerifications — maps list
+    // 1. getVerifications — maps list (incl. cnicBackImageUrl)
     // ============================================================
     @Test
     void getVerifications_mapsList() {
@@ -81,13 +83,19 @@ class AdminVerificationServiceTest {
                 adminVerificationService.getVerifications(VerificationStatus.PENDING);
 
         assertThat(resp).hasSize(1);
-        assertThat(resp.get(0).getEmail()).isEqualTo("tutor@tutr.com");
-        assertThat(resp.get(0).getTutorName()).isEqualTo("Ahmed Tutor");
-        assertThat(resp.get(0).getUniversityName()).isEqualTo("LUMS");
+        AdminVerificationListResponse item = resp.get(0);
+        assertThat(item.getEmail()).isEqualTo("tutor@tutr.com");
+        assertThat(item.getTutorName()).isEqualTo("Ahmed Tutor");
+        assertThat(item.getUniversityName()).isEqualTo("LUMS");
+
+
+        assertThat(item.getCnicImageUrl()).isEqualTo("/cnic_front.jpg");
+        assertThat(item.getCnicBackImageUrl()).isEqualTo("/cnic_back.jpg");
+        assertThat(item.getCertificateImageUrl()).isEqualTo("/cert.jpg");
     }
 
     // ============================================================
-    // 2. getVerificationDetail — success
+    // 2. getVerificationDetail — success (incl. cnicBackImageUrl)
     // ============================================================
     @Test
     void getVerificationDetail_success() {
@@ -101,6 +109,11 @@ class AdminVerificationServiceTest {
         assertThat(resp.getEmail()).isEqualTo("tutor@tutr.com");
         assertThat(resp.getPhone()).isEqualTo("03001234567");
         assertThat(resp.getStatus()).isEqualTo(VerificationStatus.PENDING);
+
+
+        assertThat(resp.getCnicImageUrl()).isEqualTo("/cnic_front.jpg");
+        assertThat(resp.getCnicBackImageUrl()).isEqualTo("/cnic_back.jpg");
+        assertThat(resp.getCertificateImageUrl()).isEqualTo("/cert.jpg");
     }
 
     // ============================================================
